@@ -1,0 +1,6 @@
+{
+  "name": "RapidFinil - World's Best Modafinil Store",
+  "description": "RapidFinil USA Domestic 3 Day Delivery Modafinil store featuring best sellers, rapid shipping, Bitcoin discount, and customer testimonials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
