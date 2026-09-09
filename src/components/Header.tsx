@@ -38,8 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Main Yellow Bar */}
-      <div className="bg-[#fed000] py-3 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-[#fed000] py-2 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4">
           {/* Logo */}
           <div className="flex items-center cursor-pointer select-none">
             <button
@@ -49,8 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {isEuPage ? (
                 /* Eurofinil EU Stars Ring Logo */
-                <div className="flex items-center gap-2.5">
-                  <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
                       {/* Ring of 12 Golden Stars */}
                       {[...Array(12)].map((_, i) => {
@@ -82,14 +82,14 @@ export const Header: React.FC<HeaderProps> = ({
                       />
                     </svg>
                   </div>
-                  <div className="text-2xl md:text-3xl font-black italic tracking-tighter text-red-700 leading-none drop-shadow-[0_2px_1px_rgba(255,255,255,0.8)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">
+                  <div className="text-xl md:text-2xl font-black italic tracking-tighter text-red-700 leading-none drop-shadow-[0_2px_1px_rgba(255,255,255,0.8)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">
                     <span className="text-red-700">Euro</span>
                     <span className="text-amber-300">finil</span>
                   </div>
                 </div>
               ) : (
                 /* RapidFinil Exact Custom Logo (Speedometer flame, speed lines, 3D glossy gradient text) */
-                <RapidFinilLogo height={50} />
+                <RapidFinilLogo height={36} />
               )}
             </button>
           </div>
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="h-full px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs md:text-sm font-medium border-r border-gray-300 flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors"
+                className="h-full px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs md:text-sm font-medium border-r border-gray-300 flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors"
               >
                 <span>{selectedCategory}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
@@ -134,13 +134,13 @@ export const Header: React.FC<HeaderProps> = ({
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 px-3 py-2 text-xs md:text-sm text-gray-800 placeholder-gray-400 outline-none bg-white"
+              className="flex-1 px-3 py-1.5 text-xs md:text-sm text-gray-800 placeholder-gray-400 outline-none bg-white"
             />
 
             {/* Search Button */}
             <button
               type="button"
-              className="bg-[#1f2421] hover:bg-black text-white px-5 py-2 text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer"
+              className="bg-[#1f2421] hover:bg-black text-white px-5 py-1.5 text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer"
             >
               Search
             </button>
@@ -151,11 +151,11 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenCart}
-              className="relative p-2 rounded-full hover:bg-amber-300/40 transition-colors cursor-pointer flex items-center gap-1"
+              className="relative p-1.5 rounded-full hover:bg-amber-300/40 transition-colors cursor-pointer flex items-center gap-1"
               aria-label="View Cart"
             >
-              <ShoppingCart className="w-7 h-7 text-[#22c55e] stroke-[2.2]" />
-              <div className="w-5 h-5 bg-[#22c55e] text-white text-[11px] font-black rounded-full flex items-center justify-center -ml-2 -mt-3 shadow-sm border-2 border-[#fed000]">
+              <ShoppingCart className="w-6 h-6 text-[#22c55e] stroke-[2.2]" />
+              <div className="w-4 h-4 bg-[#1f2421] text-white text-[10px] font-black rounded-full flex items-center justify-center -ml-2 -mt-3 shadow-sm">
                 {cartCount}
               </div>
             </button>

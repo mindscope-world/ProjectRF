@@ -3,6 +3,10 @@ export interface ProductOption {
   label: string;
   price: number;
   savings?: string;
+  // Backend product_variants.id — needed to add this exact pack size to the
+  // server-side cart (see src/api/client.ts). Absent for any product not
+  // sourced from the API.
+  variantId?: string;
 }
 
 export interface Product {

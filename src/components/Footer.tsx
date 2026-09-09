@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 interface FooterProps {
   onCategoryClick?: (cat: string) => void;
+  onNavSelect?: (nav: string) => void;
 }
 
-export const Footer: React.FC<FooterProps> = () => {
+export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
   const scrollToTop = () => {
@@ -15,6 +16,13 @@ export const Footer: React.FC<FooterProps> = () => {
   };
 
   const handleLinkClick = (name: string) => {
+    // If onNavSelect is provided and this is Contact Us, use it for navigation
+    if (name === 'Contact Us' && onNavSelect) {
+      onNavSelect('Contact Us');
+      return;
+    }
+
+    // Otherwise, show modal as before
     switch (name) {
       case 'Contact Us':
         setModalContent({
@@ -78,7 +86,7 @@ export const Footer: React.FC<FooterProps> = () => {
           {/* Column 1: Help & Contact */}
           <div>
             <h3 className="text-white text-[16px] font-semibold tracking-normal mb-2">
-              Help &amp; Contact
+              Help & Contact
             </h3>
             {/* Yellow Accent Bar + Dark Gray Line */}
             <div className="flex items-center w-full mb-5">
@@ -100,7 +108,7 @@ export const Footer: React.FC<FooterProps> = () => {
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
                   >
                     <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
-                      &gt;
+                      {'>'}
                     </span>
                     <span>{item}</span>
                   </button>
@@ -114,7 +122,7 @@ export const Footer: React.FC<FooterProps> = () => {
             <h3 className="text-white text-[16px] font-semibold tracking-normal mb-2">
               Social Media
             </h3>
-            {/* Yellow Accent Bar + Dark Gray Line */}
+            {/* Yellow Accent Bar Accent + Dark Gray Line */}
             <div className="flex items-center w-full mb-5">
               <span className="w-10 h-[2px] bg-[#fed000] shrink-0"></span>
               <span className="w-full h-[1px] bg-[#3a3a3a]"></span>
@@ -123,13 +131,13 @@ export const Footer: React.FC<FooterProps> = () => {
               {['Facebook', 'Twitter', 'Instagram', 'Linkedin', 'Youtube'].map((item) => (
                 <li key={item}>
                   <a
-                    href={`https://${item.toLowerCase()}.com`}
+                    href={`https://${item.toLowerCase()}.com/rapidfinil`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
                   >
                     <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
-                      &gt;
+                      {'>'}
                     </span>
                     <span>{item}</span>
                   </a>
@@ -157,7 +165,7 @@ export const Footer: React.FC<FooterProps> = () => {
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
                   >
                     <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
-                      &gt;
+                      {'>'}
                     </span>
                     <span>{item}</span>
                   </button>
@@ -185,7 +193,7 @@ export const Footer: React.FC<FooterProps> = () => {
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
                   >
                     <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
-                      &gt;
+                      {'>'}
                     </span>
                     <span>{item}</span>
                   </button>

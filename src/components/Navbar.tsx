@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="shop-by-categories-button"
               type="button"
               onClick={onToggleCategories}
-              className={`flex items-center gap-2.5 px-4 h-full w-56 sm:w-64 border-l-2 border-[#fed000] border-r border-gray-200 hover:bg-gray-50 transition-colors font-semibold text-gray-800 cursor-pointer select-none bg-white ${
+              className={`flex items-center gap-2.5 px-4 h-full w-56 sm:w-64 border-l-2 border-r-2 border-b-2 border-[#fed000] hover:bg-gray-50 transition-colors font-semibold text-gray-800 cursor-pointer select-none bg-white ${
                 isCategoriesOpen ? 'bg-gray-50' : ''
               }`}
               aria-expanded={isCategoriesOpen}
@@ -115,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => onSelectNav('Home')}
               className={`hover:text-amber-600 transition-colors cursor-pointer ${
-                activeNav === 'Home' ? 'text-gray-950 font-bold' : 'text-gray-600'
+                activeNav === 'Home' ? 'text-gray-400' : 'text-gray-800'
               }`}
             >
               Home
@@ -126,7 +126,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => onSelectNav('USA Domestic')}
               className={`hover:text-amber-600 transition-colors cursor-pointer ${
-                activeNav === 'USA Domestic' ? 'text-gray-950 font-bold' : 'text-gray-600'
+                activeNav === 'USA Domestic' ? 'text-gray-400' : 'text-gray-800'
               }`}
             >
               USA Domestic
@@ -137,7 +137,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => onSelectNav('UK domestic')}
               className={`hover:text-amber-600 transition-colors cursor-pointer ${
-                activeNav === 'UK domestic' ? 'text-gray-950 font-bold' : 'text-gray-600'
+                activeNav === 'UK domestic' ? 'text-gray-400' : 'text-gray-800'
               }`}
             >
               UK Domestic
@@ -148,21 +148,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => onSelectNav('EU to EU')}
               className={`hover:text-amber-600 transition-colors cursor-pointer ${
-                activeNav === 'EU to EU' ? 'text-gray-950 font-bold border-b-2 border-[#fed000] pb-0.5' : 'text-gray-600'
+                activeNav === 'EU to EU' ? 'text-gray-400' : 'text-gray-800'
               }`}
             >
               EU to EU
-            </button>
-            <span className="text-gray-300">|</span>
-
-            <button
-              type="button"
-              onClick={() => onSelectNav('Join Subreddit')}
-              className={`hover:text-amber-600 transition-colors cursor-pointer ${
-                activeNav === 'Join Subreddit' ? 'text-gray-950 font-bold' : 'text-gray-600'
-              }`}
-            >
-              Join Subreddit
             </button>
           </div>
         </div>

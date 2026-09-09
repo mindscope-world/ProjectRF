@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React from 'react';
+import { X, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { CartItem } from '../types';
 
 interface CartDrawerProps {
@@ -8,7 +8,8 @@ interface CartDrawerProps {
   items: CartItem[];
   onUpdateQuantity: (id: string, qty: number) => void;
   onRemoveItem: (id: string) => void;
-  onClearCart: () => void;
+  onViewCart: () => void;
+  onProceedToCheckout: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -17,25 +18,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  onClearCart,
+  onViewCart,
+  onProceedToCheckout,
 }) => {
-  const [checkoutComplete, setCheckoutComplete] = useState(false);
-
   if (!isOpen) return null;
 
   const currency = items[0]?.currency || '$';
   const subtotal = items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
   const bitcoinDiscount = subtotal * 0.05;
   const bitcoinTotal = subtotal - bitcoinDiscount;
-
-  const handleCheckout = () => {
-    setCheckoutComplete(true);
-    setTimeout(() => {
-      onClearCart();
-      setCheckoutComplete(false);
-      onClose();
-    }, 2500);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
@@ -146,21 +137,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </span>
             </div>
 
-            {checkoutComplete ? (
-              <div className="bg-emerald-600 text-white py-3 px-4 rounded text-center font-bold text-xs flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Order Placed! Thank you for choosing RapidFinil.
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleCheckout}
-                className="w-full py-3 px-4 bg-[#fed000] hover:bg-[#ffc800] text-gray-950 font-bold text-xs uppercase tracking-wider rounded shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
-              >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onViewCart}
+              className="w-full py-2.5 px-4 mb-2 bg-white border-2 border-gray-800 hover:bg-gray-800 hover:text-white text-gray-800 font-bold text-xs uppercase tracking-wider rounded transition-colors cursor-pointer"
+            >
+              View Cart
+            </button>
+            <button
+              type="button"
+              onClick={onProceedToCheckout}
+              className="w-full py-3 px-4 bg-[#fed000] hover:bg-[#ffc800] text-gray-950 font-bold text-xs uppercase tracking-wider rounded shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+            >
+              <span>Proceed to Checkout</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
 
             <p className="text-[10px] text-center text-gray-500 mt-2">
               Free 3-Day USA Domestic Shipping with Tracking Included

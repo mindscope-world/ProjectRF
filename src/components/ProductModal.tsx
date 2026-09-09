@@ -7,12 +7,14 @@ interface ProductModalProps {
   product: Product | null;
   onClose: () => void;
   onAddToCart: (product: Product, option: ProductOption, quantity: number) => void;
+  onViewCart: () => void;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
   product,
   onClose,
   onAddToCart,
+  onViewCart,
 }) => {
   if (!product) return null;
 
@@ -25,10 +27,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const handleAdd = () => {
     onAddToCart(product, selectedOption, quantity);
     setAddedNotice(true);
-    setTimeout(() => {
-      setAddedNotice(false);
-      onClose();
-    }, 900);
+  };
+
+  // Reset synchronously as part of leaving the modal (rather than a
+  // useEffect keyed on `product`) so re-opening for a different item never
+  // shows a stale "Added to Cart!" confirmation left over from the last one.
+  const handleContinueShopping = () => {
+    setAddedNotice(false);
+    onClose();
+  };
+
+  const handleGoToCart = () => {
+    setAddedNotice(false);
+    onViewCart();
+    onClose();
   };
 
   const isOutOfStock = product.badges?.some((b) => b.variant === 'out-of-stock');
@@ -145,32 +157,50 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
               {/* Action Buttons */}
               <div>
-                <button
-                  type="button"
-                  disabled={isOutOfStock || addedNotice}
-                  onClick={handleAdd}
-                  className={`w-full py-3 px-4 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
-                    isOutOfStock
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : addedNotice
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-[#fed000] hover:bg-[#ffc800] text-gray-950'
-                  }`}
-                >
-                  {isOutOfStock ? (
-                    'Out of Stock'
-                  ) : addedNotice ? (
-                    <>
+                {addedNotice ? (
+                  <div className="space-y-2">
+                    <div className="w-full py-3 px-4 rounded font-bold text-sm flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-md">
                       <Check className="w-4 h-4" />
                       Added to Cart!
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-4 h-4" />
-                      Add to Cart • ${(selectedOption.price * quantity).toFixed(2)}
-                    </>
-                  )}
-                </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={handleContinueShopping}
+                        className="py-2.5 px-3 rounded border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white font-bold text-xs uppercase tracking-wide transition-colors cursor-pointer"
+                      >
+                        Continue Shopping
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGoToCart}
+                        className="py-2.5 px-3 rounded bg-[#fed000] hover:bg-[#ffc800] text-gray-950 font-bold text-xs uppercase tracking-wide shadow-md transition-colors cursor-pointer"
+                      >
+                        View Cart
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isOutOfStock}
+                    onClick={handleAdd}
+                    className={`w-full py-3 px-4 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
+                      isOutOfStock
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#fed000] hover:bg-[#ffc800] text-gray-950'
+                    }`}
+                  >
+                    {isOutOfStock ? (
+                      'Out of Stock'
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-4 h-4" />
+                        Add to Cart • ${(selectedOption.price * quantity).toFixed(2)}
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <div className="mt-2 text-center text-[11px] text-amber-700 font-semibold">
                   ★ Pay with Bitcoin and get an instant 5% off!

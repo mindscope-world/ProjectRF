@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
-export const EuFooter: React.FC = () => {
+export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
+  onNavSelect,
+}) => {
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
   const scrollToTop = () => {
@@ -11,6 +13,13 @@ export const EuFooter: React.FC = () => {
   };
 
   const handleLinkClick = (name: string) => {
+    // If onNavSelect is provided and this is Contact Us, use it for navigation
+    if (name === 'Contact Us' && onNavSelect) {
+      onNavSelect('Contact Us');
+      return;
+    }
+
+    // Otherwise, show modal as before
     switch (name) {
       case 'Contact Us':
         setModalContent({
@@ -175,6 +184,10 @@ export const EuFooter: React.FC = () => {
               className="flex items-center justify-center bg-[#003399] text-white font-black text-[11px] rounded-[5px] px-2.5 h-[34px] shadow-sm select-none border border-blue-400/30"
               title="SEPA Instant Transfer"
             >
+              {'<'}
+            <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
+                      {'>'}
+                    </span>
               <span className="text-amber-300 mr-0.5">★</span> S€PA
             </div>
 
@@ -183,6 +196,7 @@ export const EuFooter: React.FC = () => {
               className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-gradient-to-b from-[#f7931a] to-[#d3770e] text-white font-black text-[15px] shadow-sm border border-amber-300/40 select-none"
               title="Bitcoin 5% off"
             >
+              {'<'}
               ₿
             </div>
 
@@ -191,6 +205,10 @@ export const EuFooter: React.FC = () => {
               className="flex items-center justify-center bg-[#1f2327] rounded-[5px] px-2 h-[34px] border border-gray-700 shadow-sm select-none gap-0.5"
               title="Credit & Debit Cards"
             >
+              {'<'}
+            <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
+                      {'>'}
+                    </span>
               <div className="w-4 h-2.5 bg-amber-400 rounded-xs shadow-2xs"></div>
               <div className="w-4 h-2.5 bg-red-500 rounded-xs -ml-1.5 opacity-90 shadow-2xs"></div>
             </div>
@@ -203,6 +221,10 @@ export const EuFooter: React.FC = () => {
               className="w-[36px] h-[36px] rounded-full bg-white hover:bg-gray-100 transition-colors flex items-center justify-center shadow-md cursor-pointer border border-gray-200 ml-2 group"
               aria-label="Scroll back to top"
             >
+              {'<'}
+              <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
+                      {'>'}
+                    </span>
               <span className="text-[#15803d] font-black text-[18px] leading-none group-hover:-translate-y-0.5 transition-transform">
                 &uarr;
               </span>
