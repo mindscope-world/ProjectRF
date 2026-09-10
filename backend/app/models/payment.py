@@ -2,12 +2,17 @@ import enum
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.order import Order
+    from app.models.refund import Refund
 
 
 class PaymentStatus(str, enum.Enum):
@@ -20,6 +25,10 @@ class PaymentStatus(str, enum.Enum):
     cancelled = "cancelled"
     refunded = "refunded"
     partially_refunded = "partially_refunded"
+    # A crypto invoice that timed out unpaid — distinct from `failed` (a
+    # declined/invalid attempt) because nothing was actually rejected, it
+    # just wasn't completed in time. Added in migration 0004.
+    expired = "expired"
 
 
 class Payment(Base):
@@ -33,6 +42,14 @@ class Payment(Base):
     provider: Mapped[str] = mapped_column(String, nullable=False)
     provider_payment_id: Mapped[str | None] = mapped_column(String, nullable=True)
     payment_method: Mapped[str] = mapped_column(String, nullable=False)
+    # Provider-hosted checkout page (BTCPay). Persisted, not just returned
+    # once, so an idempotent checkout replay (customer reloads before paying)
+    # can still hand back the same link instead of a dead end.
+    checkout_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # On-chain address BTCPay derived for this invoice — needed by a
+    # card->BTC on-ramp widget (Ramp Network). Same persistence reasoning as
+    # checkout_url above.
+    crypto_address: Mapped[str | None] = mapped_column(String, nullable=True)
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -55,3 +72,4 @@ class Payment(Base):
     __table_args__ = (CheckConstraint("amount >= 0", name="ck_payments_amount_non_negative"),)
 
     order: Mapped["Order"] = relationship(back_populates="payments")
+    refunds: Mapped[list["Refund"]] = relationship(back_populates="payment")

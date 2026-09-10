@@ -2,12 +2,26 @@ import enum
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.payment import Payment
 
 
 class OrderStatus(str, enum.Enum):
@@ -91,6 +105,13 @@ class Order(Base):
     # applied to product name/sku/price.
     shipping_address: Mapped[dict] = mapped_column(JSONB, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Minimal viable fulfillment tracking — Phase 9 (a full shipments
+    # subsystem: carriers, rate shopping, label purchase) was never built,
+    # but the Phase 10 admin panel still needs somewhere to record "this
+    # shipped, here's the tracking number" without waiting on that.
+    tracking_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    carrier: Mapped[str | None] = mapped_column(String, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

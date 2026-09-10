@@ -1,0 +1,118 @@
+# Local BTCPay Server regtest stack for testing real crypto checkout end-to-end.
+#
+# This is a lightweight dev-only setup (NOT the official btcpayserver-docker
+# installer in btcpay-regtest/, which requires root and is meant for
+# deploying a real production instance on a VPS). It reuses the same image
+# versions/env conventions as that installer's docker-fragments/*.yml, but
+# runs as plain containers on the existing `rapidfinil_default` network so
+# the storefront's `api` container and BTCPay's webhook can reach each other
+# by service name.
+#
+# Usage:
+#   docker compose -f compose.yaml -f compose.btcpay-regtest.yaml up -d
+#
+# First-time setup (one-time, via the browser):
+#   1. Mine 101 regtest blocks so the wallet has spendable coins:
+#      docker compose -f compose.yaml -f compose.btcpay-regtest.yaml exec bitcoind \
+#        bitcoin-cli -regtest -rpcport=43782 -rpcuser= -rpcpassword= generatetoaddress 101 <address>
+#      (see backend/README.md's BTCPay regtest section for the full walkthrough)
+#   2. Open http://localhost:23000, create the admin account, create a store,
+#      generate/import a regtest wallet, create a Greenfield API key, and add
+#      a webhook pointed at http://api:8000/api/v1/webhooks/payments/btcpay
+#   3. Put the store id / API key / webhook secret into backend/.env
+
+services:
+  bitcoind:
+    container_name: btcpay-regtest-bitcoind
+    image: btcpayserver/bitcoin:31.1-1
+    restart: unless-stopped
+    environment:
+      BITCOIN_NETWORK: regtest
+      CREATE_WALLET: "true"
+      BITCOIN_WALLETDIR: /walletdata
+      BITCOIN_EXTRA_ARGS: |
+        rpcport=43782
+        rpcbind=0.0.0.0:43782
+        rpcallowip=0.0.0.0/0
+        port=39388
+        whitelist=0.0.0.0/0
+        maxmempool=500
+        fallbackfee=0.0002
+    expose:
+      - "43782"
+      - "39388"
+    volumes:
+      - btcpay_regtest_bitcoin_datadir:/data
+      - btcpay_regtest_bitcoin_walletdir:/walletdata
+
+  nbxplorer:
+    container_name: btcpay-regtest-nbxplorer
+    image: nicolasdorier/nbxplorer:2.6.13
+    restart: unless-stopped
+    depends_on:
+      - bitcoind
+      - btcpaydb
+    environment:
+      NBXPLORER_NETWORK: regtest
+      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_TRIMEVENTS: 10000
+      NBXPLORER_SIGNALFILESDIR: /datadir
+      NBXPLORER_CHAINS: btc
+      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+      NBXPLORER_POSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=nbxplorer;MaxPoolSize=20;Database=nbxplorerregtest
+    expose:
+      - "32838"
+    volumes:
+      - btcpay_regtest_nbxplorer_datadir:/datadir
+      - btcpay_regtest_bitcoin_datadir:/root/.bitcoin
+
+  btcpaydb:
+    container_name: btcpay-regtest-postgres
+    image: btcpayserver/postgres:18.6
+    restart: unless-stopped
+    shm_size: 256mb
+    command: ["-c", "random_page_cost=1.0", "-c", "shared_preload_libraries=pg_stat_statements"]
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - btcpay_regtest_postgres_datadir:/var/lib/postgresql
+
+  btcpayserver:
+    container_name: btcpay-regtest-server
+    image: btcpayserver/btcpayserver:2.4.4
+    restart: unless-stopped
+    depends_on:
+      - nbxplorer
+      - btcpaydb
+    environment:
+      BTCPAY_POSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=btcpayserver;Database=btcpayserverregtest
+      BTCPAY_EXPLORERPOSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=btcpayserver;MaxPoolSize=80;Database=nbxplorerregtest
+      BTCPAY_NETWORK: regtest
+      BTCPAY_BIND: 0.0.0.0:49392
+      BTCPAY_ROOTPATH: /
+      BTCPAY_CHAINS: btc
+      BTCPAY_BTCEXPLORERURL: http://nbxplorer:32838/
+      BTCPAY_DEBUGLOG: btcpay.log
+      BTCPAY_DOCKERDEPLOYMENT: "true"
+      BTCPAY_NODEFAULTCHAIN: "true"
+      BTCPAY_ALLOW-ADMIN-REGISTRATION: "true"
+    ports:
+      - "23000:49392"
+    volumes:
+      - btcpay_regtest_datadir:/datadir
+      - btcpay_regtest_plugins:/root/.btcpayserver/Plugins
+      - btcpay_regtest_nbxplorer_datadir:/root/.nbxplorer
+
+networks:
+  default:
+    name: rapidfinil_default
+    external: true
+
+volumes:
+  btcpay_regtest_bitcoin_datadir:
+  btcpay_regtest_bitcoin_walletdir:
+  btcpay_regtest_nbxplorer_datadir:
+  btcpay_regtest_postgres_datadir:
+  btcpay_regtest_datadir:
+  btcpay_regtest_plugins:

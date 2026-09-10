@@ -1,0 +1,177 @@
+# Mainnet BTCPay Server stack for LIVE crypto checkout — real Bitcoin, real money.
+#
+# This is the production counterpart of compose.btcpay-regtest.yaml. Same
+# shape, same image versions, same shared `rapidfinil_default` network so the
+# storefront's `api` container and BTCPay's webhook can reach each other by
+# service name — but every network value is `mainnet`, there is NO hot wallet
+# (a mainnet store MUST be a watch-only wallet connected from an xpub/zpub you
+# control — see docs/btcpay-mainnet-runbook.md), and the Bitcoin node does a
+# real chain sync.
+#
+# WHY THIS FILE EXISTS: a regtest BTCPay instance hands out `bcrt1...`
+# addresses. Binance, Trust Wallet, and every real wallet reject those
+# ("expected bc, got bcrt"). Only a mainnet node + mainnet NBXplorer +
+# mainnet BTCPay produce spendable `bc1.../3.../1...` addresses. Do not try to
+# convert a regtest deployment in place — stand this up fresh and issue new
+# invoices.
+#
+# ---------------------------------------------------------------------------
+# BEFORE YOU START — this is not a throwaway dev stack:
+#
+#   * Disk:  ~50 GB with prune=5000 (the default below). A full/archival node
+#            is ~700 GB and is only needed if you will import a wallet that
+#            already has years of on-chain history. A freshly-created checkout
+#            xpub has no history, so pruned is fine.
+#   * RAM:   4 GB+ for the box (bitcoind dbcache + BTCPay + NBXplorer + PG).
+#   * Time:  initial mainnet sync is ~1–3 days depending on the host and
+#            bandwidth. BTCPay's wallet/invoice features stay degraded until
+#            `bitcoind` reports `"initialblockdownload": false`.
+#   * TLS:   BTCPay must be reachable by the customer's browser over HTTPS in
+#            production. This file binds it on :23000 for a reverse proxy
+#            (Caddy / nginx / Cloudflare Tunnel) to terminate TLS in front of
+#            — it is NOT safe to expose :23000 directly to the internet.
+#
+# Alternative: the official installer vendored in `btcpay-regtest/` (despite
+# the directory name it is the generic btcpayserver-docker installer) deploys
+# a hardened production instance with Let's Encrypt built in, via
+# `NBITCOIN_NETWORK=mainnet ./btcpay-setup.sh -i`. Use that instead of this
+# file if you want BTCPay to own the whole host. The runbook covers both.
+# ---------------------------------------------------------------------------
+#
+# Usage:
+#   docker compose -f compose.yaml -f compose.btcpay-mainnet.yaml up -d
+#   # watch the sync:
+#   docker exec btcpay-mainnet-bitcoind bitcoin-cli -rpcport=43782 \
+#     -rpcconnect=127.0.0.1 -datadir=/data getblockchaininfo
+#   # expect "chain": "main" and, eventually, "initialblockdownload": false
+#
+# First-time setup (one-time, in a browser once BTCPay is up):
+#   1. Open https://<your-btcpay-domain>, create the admin account.
+#   2. Create a store. Store Settings → General → confirm Network shows
+#      "Mainnet".
+#   3. Store Settings → Wallets → Bitcoin → *Connect an existing wallet* →
+#      paste the xpub/zpub exported from your own wallet (BlueWallet: Wallet →
+#      ⋮ → Show Wallet XPUB). Pick the matching script type (native SegWit /
+#      bc1 is standard). DO NOT "Generate a new wallet" — that would put a
+#      spendable hot key on the server.
+#   4. Account → Manage Account → API Keys → generate a Greenfield key scoped
+#      to the store with invoice create/read (+ refund if needed).
+#   5. Store Settings → Webhooks → add
+#      http://api:8000/api/v1/webhooks/payments/btcpay  (internal address on
+#      the shared Docker network), subscribe to InvoiceProcessing,
+#      InvoiceReceivedPayment, InvoiceSettled, InvoiceExpired, InvoiceInvalid.
+#      Copy the webhook secret.
+#   6. Put the values in backend/.env (see backend/.env.example), then
+#      recreate the app containers so they reload env_file:
+#        docker compose up -d --force-recreate api worker
+#   7. Create a small real invoice and confirm the address starts with
+#      `bc1`, `3`, or `1` — NOT `bcrt1` or `tb1`. See the runbook's
+#      verification checklist.
+
+services:
+  bitcoind:
+    container_name: btcpay-mainnet-bitcoind
+    image: btcpayserver/bitcoin:31.1-1
+    restart: unless-stopped
+    stop_grace_period: 10m   # give the node time to flush its DB on shutdown
+    environment:
+      BITCOIN_NETWORK: mainnet
+      # No CREATE_WALLET: a mainnet store is watch-only, connected from an
+      # xpub in the BTCPay UI. bitcoind holds no wallet here.
+      BITCOIN_EXTRA_ARGS: |
+        rpcport=43782
+        rpcbind=0.0.0.0:43782
+        rpcallowip=0.0.0.0/0
+        port=8333
+        maxmempool=500
+        dbcache=1000
+        # Pruned node: keeps ~5 GB of blocks + the full UTXO set. Enough for a
+        # watch-only wallet with no historical transactions. Set prune=0 (and
+        # provision ~700 GB) only if you will import a wallet whose first use
+        # predates the pruned window.
+        prune=5000
+    expose:
+      - "43782"
+      - "8333"
+    volumes:
+      - btcpay_mainnet_bitcoin_datadir:/data
+      - btcpay_mainnet_bitcoin_walletdir:/walletdata
+
+  nbxplorer:
+    container_name: btcpay-mainnet-nbxplorer
+    image: nicolasdorier/nbxplorer:2.6.13
+    restart: unless-stopped
+    depends_on:
+      - bitcoind
+      - btcpaydb
+    environment:
+      NBXPLORER_NETWORK: mainnet
+      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_TRIMEVENTS: 10000
+      NBXPLORER_SIGNALFILESDIR: /datadir
+      NBXPLORER_CHAINS: btc
+      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:8333
+      # Pruned bitcoind is supported: NBXplorer does not require txindex. A
+      # rescan can only go back as far as the pruned block window, which is
+      # why a wallet with older history needs a non-pruned node instead.
+      NBXPLORER_POSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=nbxplorer;MaxPoolSize=20;Database=nbxplorermainnet
+    expose:
+      - "32838"
+    volumes:
+      - btcpay_mainnet_nbxplorer_datadir:/datadir
+      - btcpay_mainnet_bitcoin_datadir:/root/.bitcoin
+
+  btcpaydb:
+    container_name: btcpay-mainnet-postgres
+    image: btcpayserver/postgres:18.6
+    restart: unless-stopped
+    shm_size: 256mb
+    command: ["-c", "random_page_cost=1.0", "-c", "shared_preload_libraries=pg_stat_statements"]
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - btcpay_mainnet_postgres_datadir:/var/lib/postgresql
+
+  btcpayserver:
+    container_name: btcpay-mainnet-server
+    image: btcpayserver/btcpayserver:2.4.4
+    restart: unless-stopped
+    depends_on:
+      - nbxplorer
+      - btcpaydb
+    environment:
+      BTCPAY_POSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=btcpayserver;Database=btcpayservermainnet
+      BTCPAY_EXPLORERPOSTGRES: User ID=postgres;Host=btcpaydb;Port=5432;Application Name=btcpayserver;MaxPoolSize=80;Database=nbxplorermainnet
+      BTCPAY_NETWORK: mainnet
+      BTCPAY_BIND: 0.0.0.0:49392
+      BTCPAY_ROOTPATH: /
+      BTCPAY_CHAINS: btc
+      BTCPAY_BTCEXPLORERURL: http://nbxplorer:32838/
+      BTCPAY_DEBUGLOG: btcpay.log
+      BTCPAY_DOCKERDEPLOYMENT: "true"
+      BTCPAY_NODEFAULTCHAIN: "true"
+      # Leave admin registration open ONLY until you have created the first
+      # (admin) account, then set this to "false" and recreate the container.
+      BTCPAY_ALLOW-ADMIN-REGISTRATION: "true"
+    ports:
+      # Bind to loopback only; terminate TLS with a reverse proxy in front.
+      # Do not publish this straight to 0.0.0.0 in production.
+      - "127.0.0.1:23000:49392"
+    volumes:
+      - btcpay_mainnet_datadir:/datadir
+      - btcpay_mainnet_plugins:/root/.btcpayserver/Plugins
+      - btcpay_mainnet_nbxplorer_datadir:/root/.nbxplorer
+
+networks:
+  default:
+    name: rapidfinil_default
+    external: true
+
+volumes:
+  btcpay_mainnet_bitcoin_datadir:
+  btcpay_mainnet_bitcoin_walletdir:
+  btcpay_mainnet_nbxplorer_datadir:
+  btcpay_mainnet_postgres_datadir:
+  btcpay_mainnet_datadir:
+  btcpay_mainnet_plugins:

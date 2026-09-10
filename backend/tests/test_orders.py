@@ -65,7 +65,10 @@ async def test_full_success_lifecycle_reserves_then_settles_inventory(client, sa
     payment = body["payment"]
 
     assert order["status"] == "awaiting_payment"
-    assert order["totalAmount"] == 200.0  # fixture price is 100 per unit
+    # fixture price is 100/unit * 2 = 200 subtotal; +$15 flat shipping,
+    # +5% tax on (subtotal+shipping) = (215)*1.05 = 225.75 — see
+    # app/services/orders.py::compute_order_totals.
+    assert order["totalAmount"] == 225.75
     assert order["items"][0]["quantity"] == 2
     assert payment["status"] == "created"
 

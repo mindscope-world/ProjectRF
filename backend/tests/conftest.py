@@ -1,8 +1,8 @@
 import uuid
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
-
 from sqlalchemy import delete
 
 from app.core.database import async_session_factory
@@ -79,3 +79,70 @@ async def sample_product():
         if db_category is not None:
             await session.delete(db_category)
         await session.commit()
+
+
+def _mock_btcpay_transport() -> httpx.MockTransport:
+    """Fakes just enough of BTCPay's Greenfield API for tests: invoice
+    creation, payment-methods lookup (for the on-chain address), and
+    refund. A fresh invoice/refund id per call avoids collisions across
+    tests sharing this same mock (Payment.provider_payment_id has no
+    uniqueness requirement in the schema, so a fixed id would let an
+    earlier test's payment be matched by a later test's webhook lookup).
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if request.method == "POST" and path.endswith("/invoices"):
+            invoice_id = f"inv_{uuid.uuid4().hex[:12]}"
+            return httpx.Response(
+                200,
+                json={
+                    "id": invoice_id,
+                    "status": "New",
+                    "checkoutLink": f"https://btcpay.test/i/{invoice_id}",
+                },
+            )
+        if request.method == "GET" and path.endswith("/payment-methods"):
+            # Real BTCPay 2.4.4 keys this `paymentMethodId` (see the matching
+            # comment in btcpay.py). Address is regtest (`bcrt1...`) to mirror
+            # the local compose.btcpay-regtest.yaml dev stack — BTCPayProvider
+            # only hard-fails on that when app_env == "production".
+            return httpx.Response(
+                200,
+                json=[{"paymentMethodId": "BTC-CHAIN", "destination": f"bcrt1qtest{uuid.uuid4().hex[:20]}"}],
+            )
+        if request.method == "POST" and path.endswith("/refund"):
+            return httpx.Response(
+                200, json={"id": f"refund_{uuid.uuid4().hex[:12]}", "status": "AwaitingPayment"}
+            )
+        return httpx.Response(404, json={"error": f"unhandled mock route: {request.method} {path}"})
+
+    return httpx.MockTransport(handler)
+
+
+@pytest.fixture
+def btcpay_configured(monkeypatch):
+    """Configures BTCPayProvider with fake-but-valid-shaped credentials and
+    replaces its HTTP client with a mock transport — no real BTCPay Server
+    or network access involved. Settings are cached (lru_cache), so the
+    cache is cleared on both setup and teardown to avoid leaking a
+    BTCPay-selecting settings object into tests that don't request this
+    fixture (they'd otherwise try real network calls and hang/fail).
+    """
+    from app.core.config import get_settings
+    from app.integrations.payments import btcpay as btcpay_module
+
+    monkeypatch.setenv("BTCPAY_BASE_URL", "https://btcpay.test")
+    monkeypatch.setenv("BTCPAY_STORE_ID", "test-store")
+    monkeypatch.setenv("BTCPAY_API_KEY", "test-api-key")
+    monkeypatch.setenv("BTCPAY_WEBHOOK_SECRET", "test-webhook-secret")
+    get_settings.cache_clear()
+
+    def fake_client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(transport=_mock_btcpay_transport(), base_url=self._base_url)
+
+    monkeypatch.setattr(btcpay_module.BTCPayProvider, "_client", fake_client)
+
+    yield
+
+    get_settings.cache_clear()

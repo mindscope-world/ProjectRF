@@ -2,7 +2,12 @@ import uuid
 from decimal import Decimal
 from typing import Literal
 
-from app.integrations.payments.base import PaymentCaptureResult, PaymentProvider, PaymentSessionResult
+from app.integrations.payments.base import (
+    PaymentCaptureResult,
+    PaymentProvider,
+    PaymentSessionResult,
+    RefundResult,
+)
 
 
 class FakePaymentProvider(PaymentProvider):
@@ -30,3 +35,16 @@ class FakePaymentProvider(PaymentProvider):
             provider_payment_id=provider_payment_id,
             status="captured" if outcome == "succeed" else "failed",
         )
+
+    async def refund(
+        self, provider_payment_id: str, amount: Decimal, reason: str | None = None
+    ) -> RefundResult:
+        # card_link payments are collected manually (Apple Pay/Zelle/cash app/
+        # a payment link) — there's no gateway to call, so this just records
+        # that a human needs to action the refund out-of-band.
+        return RefundResult(provider_refund_id=f"fake_refund_{uuid.uuid4().hex}", status="succeeded")
+
+    def verify_webhook(self, payload: bytes, signature: str) -> bool:
+        # The fake provider never sends webhooks — capture() is called
+        # directly instead — so this is never exercised in practice.
+        return True

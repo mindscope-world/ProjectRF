@@ -1,7 +1,7 @@
 [project]
 name = "rapidfinil-backend"
 version = "0.1.0"
-description = "RapidFinil pharmacy commerce backend"
+description = "Brimline wholesale headwear commerce backend"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.115",
@@ -30,7 +30,24 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# app/core/database.py creates the async engine/connection pool once at
+# import time, as a module-level singleton — its pooled asyncpg connections
+# are bound to whichever event loop was running when they were opened. A
+# function-scoped event loop (pytest-asyncio's default) tears down and
+# spins up a new loop per test, so any pooled connection surviving from a
+# previous test gets used against a *different* loop than the one it was
+# created on — asyncpg raises "attached to a different loop" /
+# "Event loop is closed". Session-scoped loops keep one loop for the whole
+# run, matching the engine's actual lifetime.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# B008: flags `Depends(...)` in argument defaults — that's FastAPI's own
+# canonical dependency-injection pattern, used throughout app/api/, not a
+# bug to fix.
+ignore = ["B008"]

@@ -4,6 +4,13 @@ services:
     container_name: rapidfinil-api
     env_file:
       - ./backend/.env
+    # Resolve external hosts (e.g. a hosted BTCPay Server) directly via public
+    # DNS. The Docker default forwards to the host resolver, which on this box
+    # (systemd-resolved -> LAN router) intermittently fails to resolve public
+    # names — httpx then raises "Temporary failure in name resolution".
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,6 +26,9 @@ services:
     command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info"]
     env_file:
       - ./backend/.env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy

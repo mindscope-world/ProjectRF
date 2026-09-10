@@ -1,0 +1,56 @@
+name: Dependency Scan
+
+# Phase 11 hardening: catch known-vulnerable dependencies. Separate from
+# backend-ci.yml (which is path-scoped to backend/** changes) because a new
+# CVE in an existing, unchanged dependency should still get caught — hence
+# the weekly schedule, not just push/PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  backend-deps:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project + pip-audit
+        run: |
+          pip install --upgrade pip
+          pip install ".[dev]"
+          pip install pip-audit
+      - name: Scan Python dependencies
+        # pip-audit against the live environment tries to look up every
+        # installed distribution on PyPI, including this project's own
+        # package (rapidfinil-backend) — which was never published there
+        # and always 404s, failing the scan on nothing. Audit a frozen
+        # requirements list with the local package filtered out instead;
+        # --strict still fails on any *third-party* dependency pip-audit
+        # can't resolve, not just ones with a known vuln.
+        run: |
+          pip freeze | grep -v '^rapidfinil-backend==' > /tmp/requirements-scan.txt
+          pip-audit -r /tmp/requirements-scan.txt --strict
+
+  frontend-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+      - name: Scan npm dependencies
+        # high/critical only — low/moderate advisories in transitive dev
+        # tooling are frequent and rarely actionable; this is a gate, not a
+        # zero-findings mandate.
+        run: npm audit --audit-level=high
