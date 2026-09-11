@@ -322,6 +322,67 @@ export function createAdminCategory(name: string, slug: string): Promise<AdminCa
   return request('/admin/categories', { method: 'POST', body: JSON.stringify({ name, slug }) });
 }
 
+// ---- Site content (hero/footer/logo/offer zone) --------------------------------
+// Mirrors backend/app/schemas/content.py — see src/siteContent.ts for the
+// same shapes on the public storefront side.
+
+export interface AdminLogoContent {
+  imageUrl: string | null;
+  brandName: string;
+}
+
+export interface AdminHeroContent {
+  headline: string;
+  badgeText: string;
+  ctaLabel: string;
+  backgroundImageUrl: string | null;
+}
+
+export interface AdminAnnouncementContent {
+  usaText: string;
+  euText: string;
+}
+
+export interface AdminFooterContent {
+  copyrightText: string;
+  supportEmail: string;
+  facebookUrl: string;
+  twitterUrl: string;
+  instagramUrl: string;
+  linkedinUrl: string;
+  youtubeUrl: string;
+}
+
+export interface AdminOfferZoneOffer {
+  title: string;
+  description: string;
+  couponCode?: string | null;
+}
+
+export interface AdminOfferZoneContent {
+  title: string;
+  offers: AdminOfferZoneOffer[];
+}
+
+export interface AdminSiteContent {
+  logo: AdminLogoContent;
+  hero: AdminHeroContent;
+  announcement: AdminAnnouncementContent;
+  footer: AdminFooterContent;
+  offerZone: AdminOfferZoneContent;
+}
+
+export function fetchAdminSiteContent(): Promise<AdminSiteContent> {
+  return request('/admin/site-content');
+}
+
+export function updateAdminSiteContent<K extends keyof AdminSiteContent>(
+  section: K,
+  value: AdminSiteContent[K]
+): Promise<AdminSiteContent[K]> {
+  return request(`/admin/site-content/${section}`, { method: 'PUT', body: JSON.stringify(value) });
+}
+
 // ---- Orders -------------------------------------------------------------------
 
 export function fetchAdminOrders(params: {

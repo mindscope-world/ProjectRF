@@ -10,6 +10,7 @@ from app.models.catalog import (
     ProductStatus,
     ProductVariant,
 )
+from app.models.content import SiteContent
 from app.models.order import ComplianceStatus, FulfillmentStatus, Order, OrderItem, OrderStatus
 from app.models.payment import Payment, PaymentStatus
 from app.models.payment_event import PaymentEvent
@@ -36,6 +37,7 @@ __all__ = [
     "ProductStatus",
     "ProductVariant",
     "Refund",
+    "SiteContent",
 ]
 
 # Each new model module must be imported here so Alembic's autogenerate can

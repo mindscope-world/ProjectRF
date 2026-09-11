@@ -1,13 +1,25 @@
 import React from 'react';
-import { X, Tag, Sparkles, Copy, Check } from 'lucide-react';
+import { X, Tag, Copy, Check } from 'lucide-react';
+import { useSiteContent } from '../SiteContentContext';
 
 interface OfferZoneModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Icon/color treatment per offer slot is fixed (index-based) — only the
+// text (and an optional coupon code) is admin-editable, since a slot's
+// visual identity (Bitcoin orange, shipping blue, coupon green) is brand
+// styling, not copy.
+const OFFER_STYLES = [
+  { badge: '₿', badgeClass: 'bg-amber-500', boxClass: 'bg-amber-50 border-amber-300', tagClass: 'bg-amber-200 text-amber-900' },
+  { badge: '3-DAY', badgeClass: 'bg-[#0066cc] text-xs font-bold', boxClass: 'bg-blue-50 border-blue-200', tagClass: 'bg-blue-200 text-blue-900' },
+  { badge: null, badgeClass: 'bg-emerald-600', boxClass: 'bg-emerald-50 border-emerald-200', tagClass: 'bg-emerald-700 text-white' },
+];
+
 export const OfferZoneModal: React.FC<OfferZoneModalProps> = ({ isOpen, onClose }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
+  const { offerZone } = useSiteContent();
 
   if (!isOpen) return null;
 
@@ -25,7 +37,7 @@ export const OfferZoneModal: React.FC<OfferZoneModalProps> = ({ isOpen, onClose 
           <div className="flex items-center gap-2">
             <span className="text-xl">👋</span>
             <h3 className="font-black text-gray-950 text-base uppercase tracking-wider">
-              Exclusive Offer Zone
+              {offerZone.title}
             </h3>
           </div>
           <button
@@ -39,64 +51,36 @@ export const OfferZoneModal: React.FC<OfferZoneModalProps> = ({ isOpen, onClose 
 
         {/* Content */}
         <div className="p-5 flex flex-col gap-4">
-          {/* Offer 1: Bitcoin */}
-          <div className="bg-amber-50 border border-amber-300 rounded-lg p-3.5 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-500 text-white font-black text-lg flex items-center justify-center shrink-0">
-              ₿
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-gray-900">Bitcoin 5% Instant Discount</h4>
-                <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold">
-                  AUTO-APPLIED
-                </span>
+          {offerZone.offers.map((offer, i) => {
+            const style = OFFER_STYLES[i % OFFER_STYLES.length];
+            return (
+              <div key={i} className={`${style.boxClass} border rounded-lg p-3.5 flex items-start gap-3`}>
+                <div className={`w-10 h-10 rounded-full ${style.badgeClass} text-white flex items-center justify-center shrink-0`}>
+                  {style.badge ?? <Tag className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-xs font-bold text-gray-900">{offer.title}</h4>
+                    {offer.couponCode ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(offer.couponCode!)}
+                        className="flex items-center gap-1 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition-colors shrink-0"
+                      >
+                        {copiedCode === offer.couponCode ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedCode === offer.couponCode ? 'COPIED' : offer.couponCode}</span>
+                      </button>
+                    ) : (
+                      <span className={`text-[10px] ${style.tagClass} px-1.5 py-0.5 rounded font-bold shrink-0`}>
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-600 mt-1">{offer.description}</p>
+                </div>
               </div>
-              <p className="text-[11px] text-gray-600 mt-1">
-                Select Bitcoin at checkout to automatically save 5% off your entire cart total.
-              </p>
-            </div>
-          </div>
-
-          {/* Offer 2: Free 3-Day Shipping */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3.5 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#0066cc] text-white font-bold text-xs flex items-center justify-center shrink-0">
-              3-DAY
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-gray-900">Free USA Domestic Priority Shipping</h4>
-                <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded font-bold">
-                  ACTIVE
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-600 mt-1">
-                USPS domestic tracking included on all orders, with delivery in 3 business days.
-              </p>
-            </div>
-          </div>
-
-          {/* Offer 3: Coupon Code */}
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-              <Tag className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-gray-900">Bulk Order Bonus</h4>
-                <button
-                  type="button"
-                  onClick={() => handleCopy('BRIM10')}
-                  className="flex items-center gap-1 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition-colors"
-                >
-                  {copiedCode === 'BRIM10' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedCode === 'BRIM10' ? 'COPIED' : 'BRIM10'}</span>
-                </button>
-              </div>
-              <p className="text-[11px] text-gray-600 mt-1">
-                Use coupon code <span className="font-mono font-bold text-emerald-800">BRIM10</span> for orders over $300 to receive a free bonus item in your pack.
-              </p>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Footer */}

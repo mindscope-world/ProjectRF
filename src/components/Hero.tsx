@@ -1,18 +1,23 @@
 import React from 'react';
 import heroEarthImage from '../assets/images/earth_space_hero_1788882424617.jpg';
+import { resolveImageSrc } from './ProductArtwork';
+import { useSiteContent } from '../SiteContentContext';
 
 interface HeroProps {
   onWhyChooseUsClick: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onWhyChooseUsClick }) => {
+  const { hero } = useSiteContent();
+  const backgroundSrc = (hero.backgroundImageUrl && resolveImageSrc(hero.backgroundImageUrl)) || heroEarthImage;
+
   return (
     <div className="relative w-full overflow-hidden bg-black text-white min-h-[440px] md:min-h-[520px] flex items-center justify-center">
-      {/* Background Image of Earth from Space */}
+      {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
-          src={heroEarthImage}
-          alt="Earth at night from orbit"
+          src={backgroundSrc}
+          alt="Hero background"
           className="w-full h-full object-cover object-center opacity-85 brightness-90"
         />
         {/* Soft vignette overlay */}
@@ -112,28 +117,28 @@ export const Hero: React.FC<HeroProps> = ({ onWhyChooseUsClick }) => {
           </svg>
         </div>
 
-        {/* 3 Day Delivery Yellow Condensed Typography (Title Case) */}
+        {/* Headline */}
         <h1
           style={{ fontFamily: "'Impact', 'Barlow Condensed', 'Oswald', 'Anton', sans-serif" }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-black text-[#fed000] tracking-tight leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] my-2 select-none"
         >
-          3 Day Delivery
+          {hero.headline}
         </h1>
 
-          {/* World's Best Headwear Store Blue Pill Badge */}
+          {/* Badge */}
           <div className="mt-3 mb-6 inline-block bg-[#1a5baf] hover:bg-[#164e96] transition-colors border border-blue-400/40 rounded-full px-7 py-2.5 shadow-lg">
             <span className="text-lg sm:text-xl md:text-2xl font-black tracking-wide text-white">
-              World&apos;s Best Headwear Store
+              {hero.badgeText}
             </span>
           </div>
 
-          {/* Why Choose Us Button */}
+          {/* CTA Button */}
           <button
             type="button"
             onClick={onWhyChooseUsClick}
             className="bg-[#fed000] hover:bg-[#ffc800] text-gray-950 font-bold px-7 py-2.5 rounded-md shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer text-sm sm:text-base"
           >
-            Why Choose Us?
+            {hero.ctaLabel}
           </button>
         </div>
       </div>

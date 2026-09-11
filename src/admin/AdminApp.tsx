@@ -6,12 +6,14 @@ import { ComplianceSection } from './sections/ComplianceSection';
 import { RefundsSection } from './sections/RefundsSection';
 import { CheckoutsSection } from './sections/CheckoutsSection';
 import { AuditLogsSection } from './sections/AuditLogsSection';
+import { SiteContentSection } from './sections/SiteContentSection';
 
-type Section = 'orders' | 'products' | 'compliance' | 'refunds' | 'checkouts' | 'audit';
+type Section = 'orders' | 'products' | 'content' | 'compliance' | 'refunds' | 'checkouts' | 'audit';
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'orders', label: 'Orders' },
   { id: 'products', label: 'Products' },
+  { id: 'content', label: 'Website Content' },
   { id: 'compliance', label: 'Compliance Queue' },
   { id: 'refunds', label: 'Refunds' },
   { id: 'checkouts', label: 'Checkouts' },
@@ -135,6 +137,7 @@ export default function AdminApp() {
       <main className="flex-1 p-8 overflow-y-auto">
         {activeSection === 'orders' && <OrdersSection />}
         {activeSection === 'products' && <ProductsSection />}
+        {activeSection === 'content' && <SiteContentSection />}
         {activeSection === 'compliance' && <ComplianceSection />}
         {activeSection === 'refunds' && <RefundsSection />}
         {activeSection === 'checkouts' && <CheckoutsSection />}

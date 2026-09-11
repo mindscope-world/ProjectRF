@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSiteContent } from '../SiteContentContext';
 
 interface FooterProps {
   onCategoryClick?: (cat: string) => void;
@@ -7,6 +8,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
+  const { footer } = useSiteContent();
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -27,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
       case 'Contact Us':
         setModalContent({
           title: 'Contact Us',
-          body: 'For fast assistance, please email our support team directly at support@brimline.example. Our support desk operates 24/7 with average response times under 8 hours.',
+          body: `For fast assistance, please email our support team directly at ${footer.supportEmail}. Our support desk operates 24/7 with average response times under 8 hours.`,
         });
         break;
       case 'Your Account':
@@ -128,10 +130,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
               <span className="w-full h-[1px] bg-[#3a3a3a]"></span>
             </div>
             <ul className="space-y-3.5 text-[14px]">
-              {['Facebook', 'Twitter', 'Instagram', 'Linkedin', 'Youtube'].map((item) => (
-                <li key={item}>
+              {[
+                { label: 'Facebook', href: footer.facebookUrl },
+                { label: 'Twitter', href: footer.twitterUrl },
+                { label: 'Instagram', href: footer.instagramUrl },
+                { label: 'Linkedin', href: footer.linkedinUrl },
+                { label: 'Youtube', href: footer.youtubeUrl },
+              ].map(({ label, href }) => (
+                <li key={label}>
                   <a
-                    href={`https://${item.toLowerCase()}.com/brimline`}
+                    href={href}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
@@ -139,7 +147,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
                     <span className="text-gray-500 font-mono text-sm group-hover:text-gray-300 transition-colors">
                       {'>'}
                     </span>
-                    <span>{item}</span>
+                    <span>{label}</span>
                   </a>
                 </li>
               ))}
@@ -207,7 +215,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
         <div className="border-t border-[#2e2e2e] pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Left: Copyright */}
           <div className="text-[14px] text-[#8e8e8e] font-normal">
-            &copy; 2025 Brimline
+            {footer.copyrightText}
           </div>
 
           {/* Right: Payment Icons + Scroll to Top Button */}

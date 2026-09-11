@@ -4,9 +4,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.catalog import ProductRegion
 from app.schemas.catalog import CategoryOut, ProductOut
+from app.schemas.content import SiteContentOut
 from app.services import catalog as catalog_service
+from app.services import content as content_service
 
 router = APIRouter(tags=["catalog"])
+
+
+@router.get("/site-content", response_model=SiteContentOut)
+async def get_site_content(db: AsyncSession = Depends(get_db)) -> SiteContentOut:
+    """Admin-editable storefront copy (hero, footer, logo, ...) — see
+    app/schemas/content.py. Public and unauthenticated: it's the same copy
+    every visitor sees, not per-user data."""
+    return await content_service.get_all_content(db)
 
 
 @router.get("/categories", response_model=list[CategoryOut])

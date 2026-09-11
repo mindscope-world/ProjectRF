@@ -28,7 +28,16 @@ from app.schemas.admin import (
     AdminUploadOut,
 )
 from app.schemas.catalog import CategoryOut
+from app.schemas.content import (
+    AnnouncementContent,
+    FooterContent,
+    HeroContent,
+    LogoContent,
+    OfferZoneContent,
+    SiteContentOut,
+)
 from app.services import admin as admin_service
+from app.services import content as content_service
 from app.services import uploads as uploads_service
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -294,3 +303,51 @@ async def list_audit_logs(
     db: AsyncSession = Depends(get_db),
 ) -> AdminAuditLogListOut:
     return await admin_service.list_audit_logs_admin(db, entityType, limit, offset)
+
+
+# ---- Site content (hero/footer/logo/etc.) ------------------------------------
+#
+# One explicit GET+PUT pair per section rather than a generic
+# /site-content/{key} route: each section has its own Pydantic shape (see
+# app/schemas/content.py), and FastAPI needs a concrete body model per route
+# to validate and document it — a single dynamic-model route would lose that.
+
+
+@router.get("/site-content", response_model=SiteContentOut)
+async def get_site_content(db: AsyncSession = Depends(get_db)) -> SiteContentOut:
+    return await content_service.get_all_content(db)
+
+
+@router.put("/site-content/logo", response_model=LogoContent)
+async def update_logo_content(
+    payload: LogoContent, actor: str = Depends(require_admin), db: AsyncSession = Depends(get_db)
+) -> LogoContent:
+    return await content_service.set_section_admin(db, actor, "logo", payload.model_dump())
+
+
+@router.put("/site-content/hero", response_model=HeroContent)
+async def update_hero_content(
+    payload: HeroContent, actor: str = Depends(require_admin), db: AsyncSession = Depends(get_db)
+) -> HeroContent:
+    return await content_service.set_section_admin(db, actor, "hero", payload.model_dump())
+
+
+@router.put("/site-content/announcement", response_model=AnnouncementContent)
+async def update_announcement_content(
+    payload: AnnouncementContent, actor: str = Depends(require_admin), db: AsyncSession = Depends(get_db)
+) -> AnnouncementContent:
+    return await content_service.set_section_admin(db, actor, "announcement", payload.model_dump())
+
+
+@router.put("/site-content/footer", response_model=FooterContent)
+async def update_footer_content(
+    payload: FooterContent, actor: str = Depends(require_admin), db: AsyncSession = Depends(get_db)
+) -> FooterContent:
+    return await content_service.set_section_admin(db, actor, "footer", payload.model_dump())
+
+
+@router.put("/site-content/offerZone", response_model=OfferZoneContent)
+async def update_offer_zone_content(
+    payload: OfferZoneContent, actor: str = Depends(require_admin), db: AsyncSession = Depends(get_db)
+) -> OfferZoneContent:
+    return await content_service.set_section_admin(db, actor, "offerZone", payload.model_dump())

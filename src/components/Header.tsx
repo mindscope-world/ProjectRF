@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingCart, ChevronDown } from 'lucide-react';
 import { SHOP_CATEGORIES } from '../constants/categories';
 import { BrandLogo } from './BrandLogo';
+import { useSiteContent } from '../SiteContentContext';
 
 interface HeaderProps {
   cartCount: number;
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogoClick,
 }) => {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const { announcement } = useSiteContent();
 
   const categories = ['All Categories', ...SHOP_CATEGORIES];
 
@@ -32,9 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="w-full">
       {/* Top Red Announcement Banner */}
       <div className="bg-[#e60000] text-white text-xs md:text-sm font-medium py-1.5 px-4 text-center select-none shadow-inner tracking-wide">
-        {isEuPage
-          ? '📣 First order? Use code WELCOME15 for 15% off — new bucket hat colorways landing this month📣'
-          : '📢 Restock alert: wide-brim sun hats and pom-pom beanies are back in stock🎯'}
+        {isEuPage ? announcement.euText : announcement.usaText}
       </div>
 
       {/* Main Yellow Bar */}

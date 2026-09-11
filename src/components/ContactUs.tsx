@@ -1,7 +1,9 @@
 import React from 'react';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import { useSiteContent } from '../SiteContentContext';
 
 export const ContactUs: React.FC = () => {
+  const { footer } = useSiteContent();
   return (
     <div className="min-h-screen flex flex-col bg-[#fcfcfc] text-gray-900 font-sans selection:bg-[#fed000] selection:text-black">
       {/* Header Section matching the reference page */}
@@ -24,8 +26,8 @@ export const ContactUs: React.FC = () => {
           <div className="flex-1">
             <p className="mb-4">
               <span className="font-semibold text-gray-900">Email:</span> <br/>
-              <a href="mailto:support@brimline.example" className="text-[#fed000] hover:underline">
-                support@brimline.example
+              <a href={`mailto:${footer.supportEmail}`} className="text-[#fed000] hover:underline">
+                {footer.supportEmail}
               </a>
             </p>
             <p className="text-gray-600 leading-relaxed">
@@ -40,9 +42,9 @@ export const ContactUs: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Support Information</h2>
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <p className="text-gray-700 leading-relaxed">
-              For fast assistance, please email our support team directly at
-              <a href="mailto:support@brimline.example" className="text-[#fed000] hover:underline font-medium">
-                support@brimline.example
+              For fast assistance, please email our support team directly at{' '}
+              <a href={`mailto:${footer.supportEmail}`} className="text-[#fed000] hover:underline font-medium">
+                {footer.supportEmail}
               </a>. Our support desk operates 24/7 with average response times under 8 hours.
             </p>
           </div>
@@ -94,7 +96,7 @@ export const ContactUs: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             {/* Left: Copyright */}
             <div className="text-sm text-[#8e8e8e]">
-              &copy; 2025 Brimline
+              {footer.copyrightText}
             </div>
 
             {/* Right: Simple Links */}

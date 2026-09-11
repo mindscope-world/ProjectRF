@@ -1,6 +1,6 @@
 import { CartItem, Product } from '../types';
 
-const API_BASE_URL =
+export const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
 
 // Admin-uploaded product photos are served from the API's origin at
