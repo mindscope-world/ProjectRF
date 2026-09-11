@@ -7,3 +7,8 @@ coverage/
 .env*
 !.env.example
 backups/
+
+# Vendored BTCPayServer docker-compose-generator clone, used only for local
+# regtest setup (see backend/README.md) — it's its own git repository, not
+# part of this project.
+btcpay-regtest/

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import parse_uuid, require_admin
 from app.core.database import get_db
 from app.schemas.admin import (
     AdminAuditLogListOut,
+    AdminCategoryIn,
     AdminCheckoutListOut,
     AdminComplianceDecisionIn,
     AdminComplianceReviewOut,
@@ -12,16 +13,23 @@ from app.schemas.admin import (
     AdminOrderListOut,
     AdminOrderOut,
     AdminOrderUpdateIn,
+    AdminProductImageIn,
+    AdminProductImageUpdateIn,
     AdminProductIn,
     AdminProductListOut,
     AdminProductOut,
     AdminProductUpdateIn,
+    AdminProductVariantIn,
     AdminProductVariantOut,
+    AdminProductVariantUpdateIn,
     AdminRefundIn,
     AdminRefundListOut,
     AdminRefundOut,
+    AdminUploadOut,
 )
+from app.schemas.catalog import CategoryOut
 from app.services import admin as admin_service
+from app.services import uploads as uploads_service
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -73,6 +81,109 @@ async def adjust_inventory(
     db: AsyncSession = Depends(get_db),
 ) -> AdminProductVariantOut:
     return await admin_service.adjust_inventory_admin(db, actor, parse_uuid(variant_id, "variant_id"), payload)
+
+
+# ---- Product variants / price range ----------------------------------------
+
+
+@router.post("/products/{product_id}/variants", response_model=AdminProductOut, status_code=201)
+async def create_variant(
+    product_id: str,
+    payload: AdminProductVariantIn,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.create_variant_admin(db, actor, parse_uuid(product_id, "product_id"), payload)
+
+
+@router.patch("/products/{product_id}/variants/{variant_id}", response_model=AdminProductOut)
+async def update_variant(
+    product_id: str,
+    variant_id: str,
+    payload: AdminProductVariantUpdateIn,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.update_variant_admin(
+        db, actor, parse_uuid(product_id, "product_id"), parse_uuid(variant_id, "variant_id"), payload
+    )
+
+
+@router.delete("/products/{product_id}/variants/{variant_id}", response_model=AdminProductOut)
+async def delete_variant(
+    product_id: str,
+    variant_id: str,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.delete_variant_admin(
+        db, actor, parse_uuid(product_id, "product_id"), parse_uuid(variant_id, "variant_id")
+    )
+
+
+# ---- Product images ----------------------------------------------------------
+
+
+@router.post("/uploads/image", response_model=AdminUploadOut, status_code=201)
+async def upload_image(
+    file: UploadFile = File(...),
+    actor: str = Depends(require_admin),
+) -> AdminUploadOut:
+    """Saves the file and hands back its URL — attach it to a product with
+    POST /products/{id}/images afterwards."""
+    return AdminUploadOut(url=await uploads_service.save_product_image(file))
+
+
+@router.post("/products/{product_id}/images", response_model=AdminProductOut, status_code=201)
+async def add_product_image(
+    product_id: str,
+    payload: AdminProductImageIn,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.add_product_image_admin(db, actor, parse_uuid(product_id, "product_id"), payload)
+
+
+@router.patch("/products/{product_id}/images/{image_id}", response_model=AdminProductOut)
+async def update_product_image(
+    product_id: str,
+    image_id: str,
+    payload: AdminProductImageUpdateIn,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.update_product_image_admin(
+        db, actor, parse_uuid(product_id, "product_id"), parse_uuid(image_id, "image_id"), payload
+    )
+
+
+@router.delete("/products/{product_id}/images/{image_id}", response_model=AdminProductOut)
+async def delete_product_image(
+    product_id: str,
+    image_id: str,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminProductOut:
+    return await admin_service.delete_product_image_admin(
+        db, actor, parse_uuid(product_id, "product_id"), parse_uuid(image_id, "image_id")
+    )
+
+
+# ---- Categories ---------------------------------------------------------------
+
+
+@router.get("/categories", response_model=list[CategoryOut])
+async def list_categories(db: AsyncSession = Depends(get_db)) -> list[CategoryOut]:
+    return await admin_service.list_categories_admin(db)
+
+
+@router.post("/categories", response_model=CategoryOut, status_code=201)
+async def create_category(
+    payload: AdminCategoryIn,
+    actor: str = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> CategoryOut:
+    return await admin_service.create_category_admin(db, actor, payload)
 
 
 # ---- Orders --------------------------------------------------------------

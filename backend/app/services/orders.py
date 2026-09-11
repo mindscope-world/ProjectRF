@@ -77,10 +77,12 @@ def _checkout_mode(provider_name: str, payment_method: str) -> Literal["none", "
 
 # Flat-rate shipping + a combined tax/payment-processing-fee percentage —
 # there's no shipping-rate table or tax-jurisdiction logic yet, just these
-# two constants applied the same way to every order. The 5% bitcoin/crypto
-# discount mirrors the rate already shown in CartDrawer.tsx.
-FLAT_SHIPPING_RATE = Decimal("15.00")
-TAX_RATE = Decimal("0.05")
+# two constants applied the same way to every order. Both are zeroed so an
+# order total equals the (tiny) product subtotal, for cheap end-to-end
+# crypto-checkout testing — restore realistic values before launch. The 5%
+# bitcoin/crypto discount mirrors the rate already shown in CartDrawer.tsx.
+FLAT_SHIPPING_RATE = Decimal("0.00")
+TAX_RATE = Decimal("0.00")
 CRYPTO_DISCOUNT_RATE = Decimal("0.05")
 
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, ChevronDown } from 'lucide-react';
 import { SHOP_CATEGORIES } from '../constants/categories';
-import { RapidFinilLogo } from './RapidFinilLogo';
+import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
   cartCount: number;
@@ -33,8 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Red Announcement Banner */}
       <div className="bg-[#e60000] text-white text-xs md:text-sm font-medium py-1.5 px-4 text-center select-none shadow-inner tracking-wide">
         {isEuPage
-          ? '📣 🇪🇸 First time discount code off15 . we will stock benzo and other ADHD products for intra EU delivery after August📣'
-          : '📢 for off site menu please email us . Armodafinil 250mg , modalert and waklert back in stock🎯'}
+          ? '📣 First order? Use code WELCOME15 for 15% off — new bucket hat colorways landing this month📣'
+          : '📢 Restock alert: wide-brim sun hats and pom-pom beanies are back in stock🎯'}
       </div>
 
       {/* Main Yellow Bar */}
@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-2 group cursor-pointer text-left focus:outline-none"
             >
               {isEuPage ? (
-                /* Eurofinil EU Stars Ring Logo */
+                /* Brimline Europe EU Stars Ring Logo */
                 <div className="flex items-center gap-2">
                   <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
@@ -83,13 +83,12 @@ export const Header: React.FC<HeaderProps> = ({
                     </svg>
                   </div>
                   <div className="text-xl md:text-2xl font-black italic tracking-tighter text-red-700 leading-none drop-shadow-[0_2px_1px_rgba(255,255,255,0.8)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">
-                    <span className="text-red-700">Euro</span>
-                    <span className="text-amber-300">finil</span>
+                    <span className="text-red-700">Brim</span>
+                    <span className="text-amber-300">line</span>
                   </div>
                 </div>
               ) : (
-                /* RapidFinil Exact Custom Logo (Speedometer flame, speed lines, 3D glossy gradient text) */
-                <RapidFinilLogo height={36} />
+                <BrandLogo height={36} />
               )}
             </button>
           </div>

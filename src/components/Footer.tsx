@@ -27,7 +27,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
       case 'Contact Us':
         setModalContent({
           title: 'Contact Us',
-          body: 'For fast assistance, please email our support team directly at support@rapidfinil.is. Our support desk operates 24/7 with average response times under 8 hours.',
+          body: 'For fast assistance, please email our support team directly at support@brimline.example. Our support desk operates 24/7 with average response times under 8 hours.',
         });
         break;
       case 'Your Account':
@@ -40,37 +40,37 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
       case 'Return Policy':
         setModalContent({
           title: 'Return & Reship Policy',
-          body: 'We guarantee 100% successful delivery. If any package is delayed or damaged during domestic transit, we provide an immediate free reshipment or full refund. No questions asked.',
+          body: 'If any package is delayed or arrives damaged during transit, we provide a free reshipment or a full refund — just reach out with your order number.',
         });
         break;
       case '100% Purchase Protection':
         setModalContent({
           title: '100% Purchase Protection',
-          body: 'All purchases are shielded by our 100% domestic delivery guarantee, discreet plain packaging, and encrypted checkout security.',
+          body: 'All purchases are protected by our on-time delivery guarantee, secure padded packaging, and encrypted checkout security.',
         });
         break;
-      case 'Donate to Gaza':
+      case 'Community Give-Back':
         setModalContent({
-          title: 'Donate to Gaza Emergency Relief',
-          body: 'RapidFinil proudly supports humanitarian emergency aid organizations providing clean water, food, and urgent medical supplies to families in Gaza.',
+          title: 'Community Give-Back Program',
+          body: 'Brimline donates a portion of every bulk order to local youth sports leagues, helping supply teams with practice gear and uniforms.',
         });
         break;
       case 'Security':
         setModalContent({
           title: 'Security & Privacy',
-          body: 'We never store sensitive payment information or credit card numbers. Customer records are permanently scrubbed post-dispatch to preserve complete customer confidentiality.',
+          body: 'We never store sensitive payment information or credit card numbers. Your order details are kept confidential and used only to fulfill and support your purchase.',
         });
         break;
       case 'FAQs':
         setModalContent({
           title: 'Frequently Asked Questions',
-          body: '• Delivery Time: 3 business days via domestic carrier.\n• Packaging: 100% plain discreet padded envelopes.\n• Bitcoin Discount: Automatic 5% discount applied at checkout.\n• Off-Site Menu: For specialized quantities, email us directly.',
+          body: '• Delivery Time: 3 business days via domestic carrier.\n• Packaging: Secure padded mailers on every order.\n• Bitcoin Discount: Automatic 5% discount applied at checkout.\n• Bulk Quotes: For custom quantities or embroidery, email us directly.',
         });
         break;
       case 'Become an Affiliate':
         setModalContent({
           title: 'Affiliate Partnership Program',
-          body: 'Join the RapidFinil affiliate program to earn competitive commissions on every referred customer. Contact affiliates@rapidfinil.is to apply.',
+          body: 'Join the Brimline affiliate program to earn competitive commissions on every referred customer. Contact affiliates@brimline.example to apply.',
         });
         break;
       default:
@@ -99,7 +99,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
                 'Your Account',
                 'Returns Centre',
                 '100% Purchase Protection',
-                'Donate to Gaza',
+                'Community Give-Back',
               ].map((item) => (
                 <li key={item}>
                   <button
@@ -131,7 +131,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
               {['Facebook', 'Twitter', 'Instagram', 'Linkedin', 'Youtube'].map((item) => (
                 <li key={item}>
                   <a
-                    href={`https://${item.toLowerCase()}.com/rapidfinil`}
+                    href={`https://${item.toLowerCase()}.com/brimline`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 text-[#cccccc] hover:text-white transition-colors cursor-pointer text-left group"
@@ -207,7 +207,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
         <div className="border-t border-[#2e2e2e] pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Left: Copyright */}
           <div className="text-[14px] text-[#8e8e8e] font-normal">
-            &copy; 2025 RapidFinil
+            &copy; 2025 Brimline
           </div>
 
           {/* Right: Payment Icons + Scroll to Top Button */}

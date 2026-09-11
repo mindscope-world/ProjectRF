@@ -17,6 +17,20 @@ class AdminProductVariantIn(BaseModel):
     quantityAvailable: int = Field(default=0, ge=0)
 
 
+class AdminProductVariantUpdateIn(BaseModel):
+    """PATCH semantics for an existing pack-size/price tier. `active: false`
+    is the "soft delete" — it drops the tier from the storefront's price
+    range without touching order history that references the variant (see
+    the hard-delete endpoint's docstring for when to use that instead)."""
+
+    label: str | None = None
+    price: Decimal | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    savingsLabel: str | None = None
+    quantity: int | None = Field(default=None, gt=0)
+    active: bool | None = None
+
+
 class AdminProductVariantOut(BaseModel):
     id: str
     sku: str
@@ -28,6 +42,40 @@ class AdminProductVariantOut(BaseModel):
     active: bool
     quantityAvailable: int
     quantityReserved: int
+
+
+class AdminProductImageIn(BaseModel):
+    """`url` is whatever POST /admin/uploads/image returned (a
+    /uploads/products/... path), or any absolute image URL if the admin
+    would rather link out to already-hosted photography."""
+
+    url: str
+    altText: str | None = None
+    isPrimary: bool = False
+
+
+class AdminProductImageUpdateIn(BaseModel):
+    altText: str | None = None
+    isPrimary: bool | None = None
+    sortOrder: int | None = None
+
+
+class AdminProductImageOut(BaseModel):
+    id: str
+    url: str
+    altText: str | None
+    sortOrder: int
+    isPrimary: bool
+
+
+class AdminUploadOut(BaseModel):
+    url: str
+
+
+class AdminCategoryIn(BaseModel):
+    name: str
+    slug: str
+    description: str | None = None
 
 
 class AdminProductIn(BaseModel):
@@ -42,7 +90,10 @@ class AdminProductIn(BaseModel):
     hasUkDomesticBadge: bool = False
     requiresPrescription: bool = False
     controlledProduct: bool = False
-    imageKey: str
+    # Optional: a product can be created bare and get its photos attached
+    # afterwards via POST /admin/products/{id}/images (the flow the admin UI
+    # actually uses — upload returns a URL, then that URL is attached).
+    imageKey: str | None = None
     variants: list[AdminProductVariantIn] = Field(min_length=1)
 
 
@@ -78,6 +129,7 @@ class AdminProductOut(BaseModel):
     requiresPrescription: bool
     controlledProduct: bool
     imageKey: str
+    images: list[AdminProductImageOut]
     variants: list[AdminProductVariantOut]
     createdAt: datetime
     updatedAt: datetime

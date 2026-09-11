@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Volume2, MoreHorizontal, X } from 'lucide-react';
+import { Play, Volume2, MoreHorizontal, X, Truck, Bitcoin } from 'lucide-react';
 
 export const EuMascotsAndVideos: React.FC = () => {
   const [activeVideo, setActiveVideo] = useState<{
@@ -13,18 +13,10 @@ export const EuMascotsAndVideos: React.FC = () => {
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 my-14">
-      {/* 1. Mascot Promotional Banners (2 Columns) */}
+      {/* 1. Promotional Banners (2 Columns) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-        {/* Left: Crash Bandicoot 5 Years Nitro Fueled Delivery */}
+        {/* Left: 5 Years of Fast EU Delivery */}
         <div className="relative rounded-2xl overflow-hidden shadow-xl border-2 border-amber-400 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 p-6 flex flex-col justify-between min-h-[220px] group">
-          <div className="absolute inset-0 pointer-events-none opacity-50 mix-blend-overlay">
-            <img
-              src="/src/assets/images/crash_mascot_banner_1788885249392.jpg"
-              alt="Nitro Fueled Delivery Background"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
           <div className="relative z-10 flex items-center justify-between gap-4">
             {/* Left Typography */}
             <div className="flex flex-col text-left">
@@ -32,13 +24,13 @@ export const EuMascotsAndVideos: React.FC = () => {
                 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 style={{ fontFamily: "'Impact', 'Barlow Condensed', sans-serif" }}
               >
-                5 YEARS EMR
+                5 YEARS STRONG
               </span>
               <span
                 className="text-xl sm:text-2xl md:text-3xl font-black uppercase text-white tracking-wide leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 style={{ fontFamily: "'Impact', 'Barlow Condensed', sans-serif" }}
               >
-                RAPID & RELIABLE
+                FAST & RELIABLE
               </span>
               <span
                 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider text-yellow-200 leading-none mt-1 drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)]"
@@ -47,7 +39,7 @@ export const EuMascotsAndVideos: React.FC = () => {
                   WebkitTextStroke: '1px #7f1d1d',
                 }}
               >
-                NITRO FUELED
+                EU-WIDE
               </span>
               <span
                 className="text-2xl sm:text-3xl font-black italic text-amber-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif mt-0.5"
@@ -56,33 +48,21 @@ export const EuMascotsAndVideos: React.FC = () => {
               </span>
             </div>
 
-            {/* Mascot Image Thumbnail */}
-            <div className="shrink-0 w-32 h-32 sm:w-40 sm:h-40 relative rounded-xl overflow-hidden shadow-2xl border-2 border-yellow-300 group-hover:scale-105 transition-transform duration-300">
-              <img
-                src="/src/assets/images/crash_mascot_banner_1788885249392.jpg"
-                alt="Crash Bandicoot Nitro Fueled Mascot"
-                className="w-full h-full object-cover"
-              />
+            {/* Decorative Icon */}
+            <div className="shrink-0 w-32 h-32 sm:w-40 sm:h-40 relative rounded-xl overflow-hidden shadow-2xl border-2 border-yellow-300 bg-black/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <Truck className="w-16 h-16 sm:w-20 sm:h-20 text-white drop-shadow-lg" />
             </div>
           </div>
 
           <div className="relative z-10 mt-4 flex items-center gap-2">
             <span className="bg-black/60 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-amber-400/40">
-              Dispatched daily • Intra-EU express
+              Dispatched daily • EU-wide express
             </span>
           </div>
         </div>
 
-        {/* Right: Donkey Kong 5% Discount with Bitcoin Payment */}
+        {/* Right: 5% Discount with Bitcoin Payment */}
         <div className="relative rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 p-6 flex flex-col justify-between min-h-[220px] group">
-          <div className="absolute inset-0 pointer-events-none opacity-50 mix-blend-overlay">
-            <img
-              src="/src/assets/images/dk_mascot_banner_1788885265697.jpg"
-              alt="Bitcoin Discount Background"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
           <div className="relative z-10 flex items-center justify-between gap-4">
             {/* Left Typography */}
             <div className="flex flex-col text-left">
@@ -103,23 +83,19 @@ export const EuMascotsAndVideos: React.FC = () => {
                 WITH BITCOIN PAYMENT
               </span>
               <span className="text-xs sm:text-sm font-bold text-amber-950 mt-2 max-w-xs">
-                Automatic instant discount deducted during checkout with crypto.
+                Automatic instant discount applied during checkout with crypto.
               </span>
             </div>
 
-            {/* Mascot Image Thumbnail */}
-            <div className="shrink-0 w-32 h-32 sm:w-40 sm:h-40 relative rounded-xl overflow-hidden shadow-2xl border-2 border-white group-hover:scale-105 transition-transform duration-300">
-              <img
-                src="/src/assets/images/dk_mascot_banner_1788885265697.jpg"
-                alt="Donkey Kong Mascot"
-                className="w-full h-full object-cover"
-              />
+            {/* Decorative Icon */}
+            <div className="shrink-0 w-32 h-32 sm:w-40 sm:h-40 relative rounded-xl overflow-hidden shadow-2xl border-2 border-white bg-black/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <Bitcoin className="w-16 h-16 sm:w-20 sm:h-20 text-gray-950 drop-shadow-lg" />
             </div>
           </div>
 
           <div className="relative z-10 mt-4 flex items-center gap-2">
             <span className="bg-gray-950 text-white text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-yellow-400">
-              ₿ Instant Verification • No ID Required
+              ₿ Applied Automatically At Checkout
             </span>
           </div>
         </div>
@@ -137,9 +113,9 @@ export const EuMascotsAndVideos: React.FC = () => {
         <div
           onClick={() => {
             setActiveVideo({
-              title: 'Eurofinil Intra-EU Fast Delivery Review',
+              title: 'Brimline Europe Fast Delivery Review',
               person: 'Sarah (Verified Customer, Spain)',
-              caption: 'Everything arrived in 3 days in discrete packaging.',
+              caption: 'Everything arrived in 3 days, securely packaged.',
               duration: '00:59',
               image: '/src/assets/images/video_review_woman_one_1788885280589.jpg',
             });
@@ -187,9 +163,9 @@ export const EuMascotsAndVideos: React.FC = () => {
         <div
           onClick={() => {
             setActiveVideo({
-              title: 'If You Have Been Looking for Modafinil in Europe',
+              title: 'If You Have Been Looking for Quality Headwear in Europe',
               person: 'Elena (Verified Customer, Germany)',
-              caption: 'if you’ve been looking for Modafinil',
+              caption: 'if you’ve been looking for quality headwear',
               duration: '01:02',
               image: '/src/assets/images/video_review_woman_two_1788885295167.jpg',
             });
@@ -208,10 +184,10 @@ export const EuMascotsAndVideos: React.FC = () => {
             <MoreHorizontal className="w-5 h-5" />
           </div>
 
-          {/* Text Overlay: "if you've been looking for Modafinil" (Matching Image 4) */}
+          {/* Text Overlay: "if you've been looking for quality headwear" (Matching Image 4) */}
           <div className="absolute top-1/4 inset-x-6 flex justify-center pointer-events-none">
             <span className="bg-black/75 text-white font-bold text-sm sm:text-base px-4 py-1.5 rounded-lg shadow-lg border border-white/20">
-              if you&apos;ve been looking for Modafinil
+              if you&apos;ve been looking for quality headwear
             </span>
           </div>
 

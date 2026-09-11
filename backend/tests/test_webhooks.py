@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.database import async_session_factory
-from app.integrations.payments.btcpay import BTCPayConfigurationError
 from app.models.catalog import Inventory
 from app.models.order import Order
 from app.models.payment import Payment
@@ -233,6 +232,42 @@ async def test_manual_capture_rejected_for_btcpay_payment(client, btcpay_configu
 
 
 @pytest.mark.asyncio
+async def test_btcpay_invoice_rejection_returns_502_not_500(
+    client, btcpay_configured, sample_product, monkeypatch
+) -> None:
+    # A BTCPay API failure (e.g. an order total below the BTC dust threshold)
+    # must surface as a handled 502 with a readable message and CORS headers,
+    # not an uncaught 500 that the browser reports as a bare NetworkError.
+    from app.integrations.payments import btcpay as btcpay_module
+
+    async def boom(self, *a, **kw):
+        raise btcpay_module.BTCPayError("BTCPay rejected the invoice (HTTP 400).")
+
+    monkeypatch.setattr(btcpay_module.BTCPayProvider, "create_payment_session", boom)
+
+    headers = _session_header()
+    await client.post(
+        "/api/v1/cart/items",
+        headers=headers,
+        json={"variantId": sample_product["variant_id"], "quantity": 1},
+    )
+    response = await client.post(
+        "/api/v1/checkout/create-order",
+        headers={**headers, "Idempotency-Key": f"key-{uuid.uuid4().hex}", "Origin": "http://localhost:5173"},
+        json={"email": "b@e.com", "shippingAddress": _address(), "paymentMethod": "crypto"},
+    )
+    assert response.status_code == 502
+    assert "BTCPay" in response.json()["detail"]
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+    async with async_session_factory() as session:
+        orders = (
+            await session.execute(select(Order).where(Order.session_id == headers["X-Session-Id"]))
+        ).scalars().all()
+    assert orders == [], "a failed payment session must roll the order back"
+
+
+@pytest.mark.asyncio
 async def test_regtest_address_is_tolerated_outside_production(
     client, btcpay_configured, sample_product
 ) -> None:
@@ -260,16 +295,20 @@ async def test_regtest_address_blocks_checkout_in_production(
         headers=session_headers,
         json={"variantId": sample_product["variant_id"], "quantity": 1},
     )
-    with pytest.raises(BTCPayConfigurationError):
-        await client.post(
-            "/api/v1/checkout/create-order",
-            headers={**session_headers, "Idempotency-Key": f"key-{uuid.uuid4().hex}"},
-            json={
-                "email": "buyer@example.com",
-                "shippingAddress": _address(),
-                "paymentMethod": "crypto",
-            },
-        )
+    response = await client.post(
+        "/api/v1/checkout/create-order",
+        headers={**session_headers, "Idempotency-Key": f"key-{uuid.uuid4().hex}"},
+        json={
+            "email": "buyer@example.com",
+            "shippingAddress": _address(),
+            "paymentMethod": "crypto",
+        },
+    )
+    # BTCPayConfigurationError is caught by the handler in main.py and mapped
+    # to a 502 (so the response carries CORS headers) rather than propagating
+    # as an uncaught 500.
+    assert response.status_code == 502
+    assert "mainnet" in response.json()["detail"].lower()
 
     # The whole checkout transaction rolled back — no order, no payment.
     async with async_session_factory() as session:

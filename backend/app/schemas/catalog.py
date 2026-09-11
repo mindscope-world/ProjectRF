@@ -28,6 +28,7 @@ class ProductOut(BaseModel):
     ratingCount: int | None = None
     badges: list[ProductBadgeOut] | None = None
     hasUsaDomesticBadge: bool | None = None
+    hasUkDomesticBadge: bool | None = None
     imageKey: str
     options: list[ProductOptionOut]
     description: str | None = None

@@ -25,6 +25,19 @@ logger = logging.getLogger(__name__)
 _NON_MAINNET_ADDRESS_PREFIXES = ("bcrt1", "tb1")
 
 
+class BTCPayError(RuntimeError):
+    """A BTCPay Greenfield API call failed (non-2xx, or the instance was
+    unreachable). Raised instead of letting a raw httpx.HTTPStatusError
+    propagate as an uncaught 500 — main.py maps this to a 502 with a usable
+    message, so the storefront shows "payment provider rejected this" rather
+    than an opaque browser NetworkError (a 500 raised above the CORS
+    middleware carries no Access-Control-Allow-Origin header).
+
+    A common trigger: an order total that converts to less than the Bitcoin
+    dust threshold (~546 sat) — BTCPay returns 400 "Payment method
+    unavailable (Amount below dust threshold)" and refuses the invoice."""
+
+
 class BTCPayConfigurationError(RuntimeError):
     """Raised when a BTCPay call is attempted without store/API credentials
     configured, or when a configured instance is on the wrong Bitcoin network
@@ -109,16 +122,30 @@ class BTCPayProvider(PaymentProvider):
         # Greenfield API: POST /api/v1/stores/{storeId}/invoices.
         # https://docs.btcpayserver.org/API/Greenfield/v1/#tag/Invoices/paths/~1api~1v1~1stores~1{storeId}~1invoices/post
         async with self._client() as client:
-            response = await client.post(
-                f"/api/v1/stores/{self._store_id}/invoices",
-                json={
-                    "amount": str(amount),
-                    "currency": currency,
-                    "metadata": {"orderId": order_id},
-                },
-                headers={"Idempotency-Key": idempotency_key},
-            )
-            response.raise_for_status()
+            try:
+                response = await client.post(
+                    f"/api/v1/stores/{self._store_id}/invoices",
+                    json={
+                        "amount": str(amount),
+                        "currency": currency,
+                        "metadata": {"orderId": order_id},
+                    },
+                    headers={"Idempotency-Key": idempotency_key},
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                detail = exc.response.text[:500]
+                logger.warning(
+                    "BTCPay invoice creation failed (%s) for order %s amount %s %s: %s",
+                    exc.response.status_code, order_id, amount, currency, detail,
+                )
+                raise BTCPayError(
+                    f"BTCPay rejected the invoice (HTTP {exc.response.status_code}). "
+                    "A total below the Bitcoin dust threshold is the usual cause."
+                ) from exc
+            except httpx.RequestError as exc:
+                logger.warning("BTCPay unreachable creating invoice for order %s: %r", order_id, exc)
+                raise BTCPayError("Could not reach the BTCPay Server instance.") from exc
             body = response.json()
             invoice_id = body["id"]
 

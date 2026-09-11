@@ -54,6 +54,7 @@ def serialize_product(product: Product) -> ProductOut:
         ratingCount=product.rating_count,
         badges=[ProductBadgeOut(**badge) for badge in product.badges] if product.badges else None,
         hasUsaDomesticBadge=product.has_usa_domestic_badge,
+        hasUkDomesticBadge=product.has_uk_domestic_badge,
         imageKey=image_key,
         options=[
             ProductOptionOut(

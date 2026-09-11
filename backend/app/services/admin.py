@@ -21,6 +21,7 @@ from app.models.refund import Refund
 from app.schemas.admin import (
     AdminAuditLogListOut,
     AdminAuditLogOut,
+    AdminCategoryIn,
     AdminCheckoutListOut,
     AdminCheckoutOut,
     AdminComplianceDecisionIn,
@@ -32,15 +33,21 @@ from app.schemas.admin import (
     AdminOrderUpdateIn,
     AdminPageMeta,
     AdminPaymentSummaryOut,
+    AdminProductImageIn,
+    AdminProductImageOut,
+    AdminProductImageUpdateIn,
     AdminProductIn,
     AdminProductListOut,
     AdminProductOut,
     AdminProductUpdateIn,
+    AdminProductVariantIn,
     AdminProductVariantOut,
+    AdminProductVariantUpdateIn,
     AdminRefundIn,
     AdminRefundListOut,
     AdminRefundOut,
 )
+from app.schemas.catalog import CategoryOut
 from app.services.orders import _checkout_mode, _execute_refund
 
 
@@ -79,6 +86,16 @@ def _serialize_admin_product(product: Product) -> AdminProductOut:
         controlledProduct=product.controlled_product,
         imageKey=next((img.storage_key for img in product.images if img.is_primary), None)
         or (product.images[0].storage_key if product.images else ""),
+        images=[
+            AdminProductImageOut(
+                id=str(img.id),
+                url=img.storage_key,
+                altText=img.alt_text,
+                sortOrder=img.sort_order,
+                isPrimary=img.is_primary,
+            )
+            for img in sorted(product.images, key=lambda i: i.sort_order)
+        ],
         variants=[
             AdminProductVariantOut(
                 id=str(v.id),
@@ -140,7 +157,19 @@ async def list_products_admin(
 
 
 async def _get_product_or_404(db: AsyncSession, product_id: uuid.UUID) -> Product:
-    stmt = select(Product).where(Product.id == product_id).options(*_product_load_options())
+    # populate_existing=True: several call sites (create_variant_admin,
+    # add_product_image_admin, ...) load a product, add a *sibling* row to
+    # one of its collections elsewhere in the same request, then re-fetch it
+    # here to serialize the fresh state. Without this, the session's
+    # expire_on_commit=False (app/core/database.py) means the identity-mapped
+    # Product instance keeps returning its already-loaded (now stale)
+    # `.variants`/`.images` collection instead of picking up the new row.
+    stmt = (
+        select(Product)
+        .where(Product.id == product_id)
+        .options(*_product_load_options())
+        .execution_options(populate_existing=True)
+    )
     product = (await db.execute(stmt)).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -183,7 +212,8 @@ async def create_product_admin(db: AsyncSession, actor: str, payload: AdminProdu
     db.add(product)
     await db.flush()
 
-    db.add(ProductImage(product_id=product.id, storage_key=payload.imageKey, is_primary=True))
+    if payload.imageKey:
+        db.add(ProductImage(product_id=product.id, storage_key=payload.imageKey, is_primary=True))
 
     for variant_in in payload.variants:
         variant = ProductVariant(
@@ -284,6 +314,243 @@ async def adjust_inventory_admin(
         quantityAvailable=variant.inventory.quantity_available,
         quantityReserved=variant.inventory.quantity_reserved,
     )
+
+
+def _unique_sku(product_slug: str, quantity: int, existing_skus: set[str]) -> str:
+    """product-slug-QUANTITY, matching create_product_admin's convention —
+    with a numeric suffix if that collides with a sibling variant already on
+    the product (two tiers with the same pack size, e.g. two different
+    label/price combos at quantity=30)."""
+    base = f"{product_slug.upper()}-{quantity}"
+    if base not in existing_skus:
+        return base
+    n = 2
+    while f"{base}-{n}" in existing_skus:
+        n += 1
+    return f"{base}-{n}"
+
+
+async def create_variant_admin(
+    db: AsyncSession, actor: str, product_id: uuid.UUID, payload: AdminProductVariantIn
+) -> AdminProductOut:
+    """Adds a new pack-size/price tier to a product's price range."""
+    product = await _get_product_or_404(db, product_id)
+
+    variant = ProductVariant(
+        product_id=product.id,
+        sku=_unique_sku(product.slug, payload.quantity, {v.sku for v in product.variants}),
+        quantity=payload.quantity,
+        label=payload.label,
+        price=payload.price,
+        currency=payload.currency,
+        savings_label=payload.savingsLabel,
+    )
+    db.add(variant)
+    await db.flush()
+    db.add(Inventory(variant_id=variant.id, quantity_available=payload.quantityAvailable))
+
+    await record_audit(
+        db,
+        actor,
+        "variant.create",
+        "product_variant",
+        str(variant.id),
+        {"productId": str(product.id), "label": payload.label, "price": str(payload.price)},
+    )
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+async def _get_product_variant_or_404(
+    db: AsyncSession, product_id: uuid.UUID, variant_id: uuid.UUID
+) -> ProductVariant:
+    stmt = (
+        select(ProductVariant)
+        .where(ProductVariant.id == variant_id, ProductVariant.product_id == product_id)
+        .options(selectinload(ProductVariant.inventory))
+    )
+    variant = (await db.execute(stmt)).scalar_one_or_none()
+    if variant is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variant not found")
+    return variant
+
+
+async def update_variant_admin(
+    db: AsyncSession,
+    actor: str,
+    product_id: uuid.UUID,
+    variant_id: uuid.UUID,
+    payload: AdminProductVariantUpdateIn,
+) -> AdminProductOut:
+    """Edits an existing tier's price/label/pack size/currency, or flips
+    `active` to pull it from the storefront's price range without deleting
+    order history that references it."""
+    variant = await _get_product_variant_or_404(db, product_id, variant_id)
+    changes = payload.model_dump(exclude_unset=True)
+
+    if "label" in changes:
+        variant.label = changes["label"]
+    if "price" in changes:
+        variant.price = changes["price"]
+    if "currency" in changes:
+        variant.currency = changes["currency"]
+    if "savingsLabel" in changes:
+        variant.savings_label = changes["savingsLabel"]
+    if "quantity" in changes:
+        variant.quantity = changes["quantity"]
+    if "active" in changes:
+        variant.active = changes["active"]
+
+    # JSONB can't serialize Decimal directly (see create_refund_admin's audit
+    # call for the same fix) — stringify it for the audit trail.
+    if "price" in changes:
+        changes["price"] = str(changes["price"])
+    await record_audit(db, actor, "variant.update", "product_variant", str(variant_id), changes)
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+async def delete_variant_admin(
+    db: AsyncSession, actor: str, product_id: uuid.UUID, variant_id: uuid.UUID
+) -> AdminProductOut:
+    """Hard-deletes a tier. Existing order line items keep pointing at it
+    (product_variants.id is ON DELETE SET NULL from order_items — see
+    app/models/order.py), so this is safe for tiers that already shipped
+    orders; it's still refused on a product's last remaining tier so a
+    product can never end up with an empty price range by accident (use
+    `active: false` via PATCH for that instead)."""
+    variant = await _get_product_variant_or_404(db, product_id, variant_id)
+
+    sibling_count_stmt = select(func.count()).select_from(ProductVariant).where(
+        ProductVariant.product_id == product_id
+    )
+    sibling_count = (await db.execute(sibling_count_stmt)).scalar_one()
+    if sibling_count <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't delete a product's only price tier — deactivate it or delete the product instead.",
+        )
+
+    await db.delete(variant)
+    await record_audit(db, actor, "variant.delete", "product_variant", str(variant_id), None)
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+# ---- Product images -------------------------------------------------------
+
+
+async def add_product_image_admin(
+    db: AsyncSession, actor: str, product_id: uuid.UUID, payload: AdminProductImageIn
+) -> AdminProductOut:
+    product = await _get_product_or_404(db, product_id)
+
+    make_primary = payload.isPrimary or not product.images
+    if make_primary:
+        for img in product.images:
+            img.is_primary = False
+
+    next_sort_order = max((img.sort_order for img in product.images), default=-1) + 1
+    db.add(
+        ProductImage(
+            product_id=product.id,
+            storage_key=payload.url,
+            alt_text=payload.altText,
+            sort_order=next_sort_order,
+            is_primary=make_primary,
+        )
+    )
+
+    await record_audit(db, actor, "product.image.add", "product", str(product.id), {"url": payload.url})
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+async def _get_product_image_or_404(
+    db: AsyncSession, product_id: uuid.UUID, image_id: uuid.UUID
+) -> ProductImage:
+    stmt = select(ProductImage).where(ProductImage.id == image_id, ProductImage.product_id == product_id)
+    image = (await db.execute(stmt)).scalar_one_or_none()
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+    return image
+
+
+async def update_product_image_admin(
+    db: AsyncSession,
+    actor: str,
+    product_id: uuid.UUID,
+    image_id: uuid.UUID,
+    payload: AdminProductImageUpdateIn,
+) -> AdminProductOut:
+    image = await _get_product_image_or_404(db, product_id, image_id)
+    changes = payload.model_dump(exclude_unset=True)
+
+    if "altText" in changes:
+        image.alt_text = changes["altText"]
+    if "sortOrder" in changes:
+        image.sort_order = changes["sortOrder"]
+    if changes.get("isPrimary"):
+        # Only one primary image per product — demote the rest.
+        product = await _get_product_or_404(db, product_id)
+        for other in product.images:
+            other.is_primary = other.id == image.id
+    elif "isPrimary" in changes:
+        image.is_primary = False
+
+    await record_audit(db, actor, "product.image.update", "product_image", str(image_id), changes)
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+async def delete_product_image_admin(
+    db: AsyncSession, actor: str, product_id: uuid.UUID, image_id: uuid.UUID
+) -> AdminProductOut:
+    product = await _get_product_or_404(db, product_id)
+    image = next((img for img in product.images if str(img.id) == str(image_id)), None)
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
+    was_primary = image.is_primary
+    await db.delete(image)
+    await db.flush()
+
+    if was_primary:
+        # Promote the next-lowest-sort-order image so the product doesn't
+        # silently go imageless on the storefront after a delete.
+        remaining = sorted((img for img in product.images if img.id != image.id), key=lambda i: i.sort_order)
+        if remaining:
+            remaining[0].is_primary = True
+
+    await record_audit(db, actor, "product.image.delete", "product_image", str(image_id), None)
+    await db.commit()
+    return await get_product_admin(db, product_id)
+
+
+# ---- Categories -------------------------------------------------------------
+
+
+async def list_categories_admin(db: AsyncSession) -> list[CategoryOut]:
+    """Unlike the storefront's list_categories, this doesn't filter to
+    active-only — an admin editing a product needs to see every category
+    that might already be assigned to something."""
+    stmt = select(Category).order_by(Category.name)
+    result = await db.execute(stmt)
+    return [CategoryOut(id=str(c.id), name=c.name, slug=c.slug) for c in result.scalars().all()]
+
+
+async def create_category_admin(db: AsyncSession, actor: str, payload: AdminCategoryIn) -> CategoryOut:
+    existing = (await db.execute(select(Category).where(Category.slug == payload.slug))).scalar_one_or_none()
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A category with this slug already exists")
+
+    category = Category(name=payload.name, slug=payload.slug, description=payload.description)
+    db.add(category)
+    await db.flush()
+
+    await record_audit(db, actor, "category.create", "category", str(category.id), {"name": payload.name})
+    await db.commit()
+    return CategoryOut(id=str(category.id), name=category.name, slug=category.slug)
 
 
 # ---- Orders --------------------------------------------------------------

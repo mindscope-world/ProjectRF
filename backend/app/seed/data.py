@@ -1,26 +1,29 @@
-"""Seed data migrated from the frontend's former static catalog
-(src/data/products.ts, src/data/euProducts.ts) into a shape the catalog
-service can load into Postgres. See workplan.md Phase 3.
+"""Seed data for the storefront's catalog: a bulk/wholesale headwear supplier
+selling bucket hats, caps, beanies, sun hats, and berets to boutiques, event
+organizers, and resellers.
 
-Category assignment: the original frontend had no per-product category
-field — `SHOP_CATEGORIES` (ADHD, Anxiety meds, ...) was matched client-side
-against each product's name/description via keyword search in App.tsx's
-`filterList`. Each product below is assigned the single category that
-keyword search would have matched, so the data is equivalent, not new.
+Category assignment: each product below carries a single category matching
+one of `CATEGORIES`, and App.tsx's client-side `filterList` keyword-matches
+against product name/description the same way. See workplan.md Phase 3 notes
+for why category assignment happens this way rather than a dedicated join
+table lookup.
 
 Inventory: the original data only had a boolean "out of stock" badge, never
 real stock counts. Products carrying that badge seed with 0 available units;
 everything else seeds with a flat 250 units — a placeholder, not a real
 stock take.
+
+Pricing: every product uses the same bulk order-size ladder (10 / 30 / 60 /
+90 / 180 units), matching the supplier catalog this data was modeled on —
+"pricing schedule applies to every product in this catalog."
 """
 
 CATEGORIES = [
-    {"name": "ADHD", "slug": "adhd"},
-    {"name": "Anxiety meds", "slug": "anxiety-meds"},
-    {"name": "Erectile dysfunction", "slug": "erectile-dysfunction"},
-    {"name": "Insomnia", "slug": "insomnia"},
-    {"name": "Pain Meds", "slug": "pain-meds"},
-    {"name": "Weight Loss", "slug": "weight-loss"},
+    {"name": "Bucket Hats", "slug": "bucket-hats"},
+    {"name": "Baseball Caps", "slug": "baseball-caps"},
+    {"name": "Beanies", "slug": "beanies"},
+    {"name": "Sun Hats", "slug": "sun-hats"},
+    {"name": "Berets", "slug": "berets"},
 ]
 
 _OUT_OF_STOCK_UNITS = 0
@@ -33,678 +36,413 @@ def _stock(badges: list[dict] | None) -> int:
     return _IN_STOCK_UNITS
 
 
+# The bulk order-size ladder shared by every USA-region (USD) product.
+# Prices are deliberately tiny so real crypto checkouts can be tested
+# end-to-end for pocket change. The floor is $0.50, not lower, because
+# BTCPay refuses to create an on-chain invoice whose BTC amount is below the
+# ~546 sat dust threshold (~$0.42 at $77k/BTC) — a sub-$0.50 total makes
+# every crypto checkout fail. savings_label is dropped: a "Save $730" tag
+# makes no sense against a $1 price.
+_USD_VARIANTS = [
+    {"quantity": 10, "label": "10-Pack", "price": 0.50, "savings_label": None},
+    {"quantity": 30, "label": "30-Pack", "price": 0.65, "savings_label": None},
+    {"quantity": 60, "label": "60-Pack", "price": 0.80, "savings_label": None},
+    {"quantity": 90, "label": "90-Pack", "price": 0.90, "savings_label": None},
+    {"quantity": 180, "label": "180-Pack", "price": 1.00, "savings_label": None},
+]
+
+# Same ladder for the EU-region duplicates (same tiny values).
+_EUR_VARIANTS = [
+    {"quantity": 10, "label": "10-Pack", "price": 0.50, "savings_label": None},
+    {"quantity": 30, "label": "30-Pack", "price": 0.65, "savings_label": None},
+    {"quantity": 60, "label": "60-Pack", "price": 0.80, "savings_label": None},
+    {"quantity": 90, "label": "90-Pack", "price": 0.90, "savings_label": None},
+    {"quantity": 180, "label": "180-Pack", "price": 1.00, "savings_label": None},
+]
+
+
 PRODUCTS = [
-    # ---- USA best sellers (src/data/products.ts: BEST_SELLERS) ----
+    # ---- USA catalog (USD, ships from the US warehouse) ----
     {
-        "slug": "phentermine-30mg",
-        "name": "phentermine 30mg",
+        "slug": "sunset-tie-dye-bucket-hat",
+        "name": "Sunset Tie-Dye Bucket Hat",
         "region": "usa",
-        "category_slug": "weight-loss",
+        "category_slug": "bucket-hats",
         "is_best_seller": True,
         "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
+        "rating": 4.8,
+        "rating_count": 214,
+        "badges": [{"text": "Best Seller", "variant": "best-seller"}],
+        "image_key": "tie-dye-bucket-hat",
+        "currency": "USD",
+        "description": (
+            "Fluffy tie-dye faux-fur bucket hat in a rotating mix of pastel colorways. "
+            "A statement pick for boutiques and festival vendors ordering in bulk."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "heritage-wool-beret",
+        "name": "Heritage Wool Beret",
+        "region": "usa",
+        "category_slug": "berets",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.6,
+        "rating_count": 88,
+        "badges": [{"text": "Ships Fast", "variant": "ships-fast"}],
+        "image_key": "wool-beret",
+        "currency": "USD",
+        "description": (
+            "Classic wool beret in eight solid colorways, finished with a soft knit "
+            "headband. A steady mover for resellers stocking a European-inspired lineup."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "youth-script-dad-cap",
+        "name": "Youth Script Dad Cap",
+        "region": "usa",
+        "category_slug": "baseball-caps",
+        "is_best_seller": True,
+        "has_usa_domestic_badge": True,
+        "rating": 4.7,
+        "rating_count": 176,
+        "badges": [{"text": "Best Seller", "variant": "best-seller"}],
+        "image_key": "youth-dad-cap",
+        "currency": "USD",
+        "description": (
+            "Low-profile cotton dad cap with a minimalist 'YOUTH' embroidery, available "
+            "in black, pink, and white. A consistent reorder for streetwear pop-ups."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "rugged-trail-distressed-cap",
+        "name": "Rugged Trail Distressed Cap",
+        "region": "usa",
+        "category_slug": "baseball-caps",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.4,
+        "rating_count": 52,
+        "badges": None,
+        "image_key": "rugged-trail-cap",
+        "currency": "USD",
+        "description": (
+            "Weathered rust-brown cap with frayed edges and bold front lettering. "
+            "Built for outdoor and workwear-adjacent retailers."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "faithwalk-distressed-cap",
+        "name": "Faithwalk Distressed Cap",
+        "region": "usa",
+        "category_slug": "baseball-caps",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.9,
+        "rating_count": 133,
         "badges": [{"text": "Price Drop", "variant": "price-drop"}],
-        "image_key": "phentermine",
-        "currency": "USD",
-        "description": "IFA Acxion Fentermina 30mg tablets for appetite control and weight management.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 140, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 250, "savings_label": "Save $30"},
-            {"quantity": 90, "label": "90 Tablets", "price": 350, "savings_label": "Save $70"},
-            {"quantity": 180, "label": "180 Tablets", "price": 540, "savings_label": "Save $160"},
-            {"quantity": 360, "label": "360 Tablets", "price": 700, "savings_label": "Save $280"},
-        ],
-    },
-    {
-        "slug": "strattera-40mg",
-        "name": "Strattera 40mg",
-        "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "BACK IN STOCK", "variant": "back-in-stock"}],
-        "image_key": "strattera",
+        "image_key": "faithwalk-cap",
         "currency": "USD",
         "description": (
-            "Strattera 40mg (Atomoxetine Hydrochloride) capsules for cognitive focus and "
-            "attention support."
+            "Vintage-wash dad cap with a raised 'Child of God' embroidered patch and a "
+            "distressed brim. A dependable seller for faith-based and lifestyle brands."
         ),
-        "variants": [
-            {"quantity": 10, "label": "10 Capsules", "price": 30, "savings_label": None},
-            {"quantity": 30, "label": "30 Capsules", "price": 85, "savings_label": "Save $5"},
-            {"quantity": 60, "label": "60 Capsules", "price": 150, "savings_label": "Save $30"},
-            {"quantity": 120, "label": "120 Capsules", "price": 270, "savings_label": "Save $90"},
-            {"quantity": 240, "label": "240 Capsules", "price": 400, "savings_label": "Save $180"},
-        ],
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "modalert-200mg",
-        "name": "Modalert 200mg",
+        "slug": "little-bear-pom-beanie",
+        "name": "Little Bear Pom Beanie",
         "region": "usa",
-        "category_slug": "adhd",
+        "category_slug": "beanies",
         "is_best_seller": True,
         "has_usa_domestic_badge": True,
         "has_uk_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "BACK IN STOCK", "variant": "back-in-stock"}],
-        "image_key": "modalert",
-        "currency": "USD",
-        "description": "Sun Pharma Modalert 200mg Modafinil USP high purity nootropic tablets.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 85, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 150, "savings_label": "Save $20"},
-            {"quantity": 120, "label": "120 Tablets", "price": 260, "savings_label": "Save $80"},
-            {"quantity": 240, "label": "240 Tablets", "price": 460, "savings_label": "Save $220"},
-            {"quantity": 500, "label": "500 Tablets", "price": 800, "savings_label": "Save $450"},
-        ],
-    },
-    {
-        "slug": "modvigil-200mg",
-        "name": "Modvigil 200mg",
-        "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 4,
-        "rating_count": 128,
-        "badges": None,
-        "image_key": "modvigil",
+        "rating": 4.9,
+        "rating_count": 301,
+        "badges": [{"text": "Best Seller", "variant": "best-seller"}],
+        "image_key": "bear-pom-beanie",
         "currency": "USD",
         "description": (
-            "HAB Pharma Modvigil 200mg Modafinil Tablets USP for wakefulness and sustained "
-            "mental stamina."
+            "Knit toddler beanie with two oversized pom-poms and a soft folded cuff, "
+            "offered in five colorways under our signature 'mini' tag."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 125, "savings_label": "Save $15"},
-            {"quantity": 120, "label": "120 Tablets", "price": 220, "savings_label": "Save $60"},
-            {"quantity": 300, "label": "300 Tablets", "price": 480, "savings_label": "Save $220"},
-            {"quantity": 1000, "label": "1000 Tablets", "price": 1050, "savings_label": "Best Value"},
-        ],
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "modasafe-300mg",
-        "name": "Modasafe 300mg",
+        "slug": "blush-cow-print-bucket-hat",
+        "name": "Blush Cow-Print Bucket Hat",
         "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
+        "category_slug": "bucket-hats",
+        "is_best_seller": False,
         "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "OUT OF STOCK", "variant": "out-of-stock"}],
-        "image_key": "modasafe",
+        "rating": 4.3,
+        "rating_count": 41,
+        "badges": [{"text": "Back in Stock", "variant": "back-in-stock"}],
+        "image_key": "cow-print-bucket-hat",
         "currency": "USD",
-        "description": "Modasafe-300 high strength Modafinil 300mg tablets in 10x10 blister packaging.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 210, "savings_label": None},
-            {"quantity": 240, "label": "240 Tablets", "price": 380, "savings_label": None},
-        ],
+        "description": (
+            "Plush faux-fur bucket hat in a pink cow-print pattern. A playful "
+            "accessory line for gift shops and novelty retailers."
+        ),
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "modasmart-400mg",
-        "name": "Modasmart 400mg",
+        "slug": "paris-nights-bucket-hat",
+        "name": "Paris Nights Bucket Hat",
         "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
+        "category_slug": "bucket-hats",
+        "is_best_seller": False,
         "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "OUT OF STOCK", "variant": "out-of-stock"}],
-        "image_key": "modasmart",
+        "rating": 4.5,
+        "rating_count": 67,
+        "badges": None,
+        "image_key": "paris-nights-bucket-hat",
         "currency": "USD",
-        "description": "Modasmart 400 Modafinil Tablets USP 400mg maximum strength formulation.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 130, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 240, "savings_label": None},
-            {"quantity": 240, "label": "240 Tablets", "price": 480, "savings_label": None},
-        ],
+        "description": (
+            "Script-embroidered bucket hat with statement piercing-ring hardware, "
+            "offered in black and white. A fashion-forward pick for boutique buyers."
+        ),
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "waklert-150mg",
-        "name": "Waklert 150mg",
+        "slug": "espresso-monogram-cap",
+        "name": "Espresso Monogram Cap",
         "region": "usa",
-        "category_slug": "adhd",
+        "category_slug": "baseball-caps",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.2,
+        "rating_count": 29,
+        "badges": [{"text": "Quality Checked", "variant": "quality-checked"}],
+        "image_key": "espresso-monogram-cap",
+        "currency": "USD",
+        "description": (
+            "Clean six-panel cap in a rich espresso brown with a simple embroidered "
+            "monogram. A versatile basic for private-label programs."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "ribbon-bow-knit-beanie",
+        "name": "Ribbon-Bow Knit Beanie",
+        "region": "usa",
+        "category_slug": "beanies",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.6,
+        "rating_count": 95,
+        "badges": None,
+        "image_key": "ribbon-bow-beanie",
+        "currency": "USD",
+        "description": (
+            "Fine-knit beanie with a delicate embroidered bow, offered in four neutral "
+            "tones. A quiet best-seller in gifting assortments."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "corduroy-docker-cap",
+        "name": "Corduroy Docker Cap",
+        "region": "usa",
+        "category_slug": "beanies",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.1,
+        "rating_count": 18,
+        "badges": [{"text": "Out of Stock", "variant": "out-of-stock"}],
+        "image_key": "corduroy-docker-cap",
+        "currency": "USD",
+        "description": (
+            "Ribbed corduroy brimless cap with an adjustable buckle strap, in four "
+            "colorways. A crossover pick for streetwear and workwear buyers."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "statement-bucket-hat",
+        "name": "Statement Bucket Hat",
+        "region": "usa",
+        "category_slug": "bucket-hats",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": True,
+        "rating": 4.4,
+        "rating_count": 60,
+        "badges": None,
+        "image_key": "statement-bucket-hat",
+        "currency": "USD",
+        "description": (
+            "Bold graphic bucket hat in black or white with a hand-lettered front logo. "
+            "A reliable reorder for skate and streetwear shops."
+        ),
+        "variants": _USD_VARIANTS,
+    },
+    {
+        "slug": "classic-bear-bucket-hat",
+        "name": "Classic Bear Bucket Hat",
+        "region": "usa",
+        "category_slug": "bucket-hats",
         "is_best_seller": True,
         "has_usa_domestic_badge": True,
         "has_uk_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "waklert",
+        "rating": 4.8,
+        "rating_count": 249,
+        "badges": [{"text": "Best Seller", "variant": "best-seller"}],
+        "image_key": "classic-bear-bucket-hat",
         "currency": "USD",
         "description": (
-            "Sun Pharma Waklert 150 Armodafinil Tablets 150mg for prolonged alertness and "
-            "clean energy."
+            "Two-tone bucket hat with a playful embroidered bear motif. One of our "
+            "most reordered SKUs for kids' and lifestyle retailers."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 85, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 155, "savings_label": "Save $15"},
-            {"quantity": 120, "label": "120 Tablets", "price": 270, "savings_label": "Save $70"},
-            {"quantity": 240, "label": "240 Tablets", "price": 470, "savings_label": "Save $210"},
-            {"quantity": 500, "label": "500 Tablets", "price": 800, "savings_label": "Save $430"},
-        ],
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "artvigil-150mg",
-        "name": "Artvigil 150mg",
+        "slug": "camo-faith-cap",
+        "name": "Camo Faith Cap",
         "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "Price Drop", "variant": "price-drop"}],
-        "image_key": "artvigil-150",
-        "currency": "USD",
-        "description": "HAB Pharma Artvigil-150 Armodafinil Tablets 150mg high-potency R-enantiomer.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 125, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 220, "savings_label": None},
-            {"quantity": 300, "label": "300 Tablets", "price": 490, "savings_label": None},
-            {"quantity": 1000, "label": "1000 Tablets", "price": 1100, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "artvigil-250mg",
-        "name": "Artvigil 250mg",
-        "region": "usa",
-        "category_slug": "adhd",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "BACK IN STOCK", "variant": "back-in-stock"}],
-        "image_key": "artvigil-250",
-        "currency": "USD",
-        "description": "HAB Pharma Artvigil 250 Extra Strength Armodafinil Tablets 250mg.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 65, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 210, "savings_label": None},
-            {"quantity": 240, "label": "240 Tablets", "price": 390, "savings_label": None},
-            {"quantity": 500, "label": "500 Tablets", "price": 800, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "nitrazepam-10mg",
-        "name": "Nitrazepam 10mg",
-        "region": "usa",
-        "category_slug": "insomnia",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "OUT OF STOCK", "variant": "out-of-stock"}],
-        "image_key": "nitrazepam",
-        "currency": "USD",
-        "description": "Elza-10 Nitrazepam Tablets IP 10mg in 20 x 10 packaging.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 50, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 90, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 160, "savings_label": None},
-            {"quantity": 300, "label": "300 Tablets", "price": 350, "savings_label": None},
-            {"quantity": 600, "label": "600 Tablets", "price": 580, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "xanax-1mg",
-        "name": "Xanax 1mg",
-        "region": "usa",
-        "category_slug": "anxiety-meds",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": False,
-        "rating": 5,
-        "rating_count": 89,
-        "badges": None,
-        "image_key": "xanax-1mg",
-        "currency": "USD",
-        "description": "Alprazolam Tablets I.P. 1 mg PROCALM-1 genuine blister packed tablets.",
-        "variants": [
-            {"quantity": 60, "label": "60 Tablets", "price": 360, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 620, "savings_label": None},
-            {"quantity": 240, "label": "240 Tablets", "price": 1000, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "xanax-2mg-gg249",
-        "name": "Xanax 2mg ( GG249 / U94 )",
-        "region": "usa",
-        "category_slug": "anxiety-meds",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [
-            {"text": "BACK IN STOCK", "variant": "back-in-stock"},
-            {"text": "Tested No Fent", "variant": "no-fent"},
-        ],
-        "image_key": "xanax-bars",
-        "currency": "USD",
-        "description": "Xanax 2mg rectangular scored bar press (GG249 / U94 imprint), lab tested clean.",
-        "variants": [
-            {"quantity": 10, "label": "10 Bars", "price": 60, "savings_label": None},
-            {"quantity": 30, "label": "30 Bars", "price": 160, "savings_label": None},
-            {"quantity": 60, "label": "60 Bars", "price": 290, "savings_label": None},
-            {"quantity": 120, "label": "120 Bars", "price": 520, "savings_label": None},
-            {"quantity": 300, "label": "300 Bars", "price": 1170, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "xanax-bar-farmapram",
-        "name": "Xanax bar 2mg ( Farmapram )",
-        "region": "usa",
-        "category_slug": "anxiety-meds",
-        "is_best_seller": True,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [
-            {"text": "SEALED BOTTLE", "variant": "sealed-bottle"},
-            {"text": "OUT OF STOCK", "variant": "out-of-stock"},
-        ],
-        "image_key": "farmapram",
-        "currency": "USD",
-        "description": "Farmapram 2.0mg original sealed amber glass bottle 90 count blank bars.",
-        "variants": [
-            {"quantity": 90, "label": "1 Bottle (90 Bars)", "price": 450, "savings_label": None},
-            {"quantity": 180, "label": "2 Bottles (180 Bars)", "price": 820, "savings_label": None},
-            {"quantity": 270, "label": "3 Bottles (270 Bars)", "price": 1190, "savings_label": None},
-            {"quantity": 450, "label": "5 Bottles (450 Bars)", "price": 1560, "savings_label": None},
-        ],
-    },
-    # ---- USA other products (src/data/products.ts: OTHER_PRODUCTS) ----
-    {
-        "slug": "clonazepam-2mg",
-        "name": "Clonazepam 2mg",
-        "region": "usa",
-        "category_slug": "anxiety-meds",
+        "category_slug": "baseball-caps",
         "is_best_seller": False,
         "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
+        "rating": 4.5,
+        "rating_count": 73,
         "badges": None,
-        "image_key": "clonazepam",
+        "image_key": "camo-faith-cap",
         "currency": "USD",
-        "description": "Tempus Pharma Clonazepam 2mg 30 tablets per box with genuine blister pack.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 160, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 280, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 420, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 580, "savings_label": None},
-        ],
+        "description": (
+            "Camouflage dad cap with a woven 'Walk By Faith' patch and a distressed "
+            "brim. A steady seller for outdoor and lifestyle boutiques."
+        ),
+        "variants": _USD_VARIANTS,
     },
     {
-        "slug": "diazepam-10mg",
-        "name": "Diazepam 10mg",
+        "slug": "expedition-wide-brim-sun-hat",
+        "name": "Expedition Wide-Brim Sun Hat",
         "region": "usa",
-        "category_slug": "anxiety-meds",
-        "is_best_seller": False,
+        "category_slug": "sun-hats",
+        "is_best_seller": True,
         "has_usa_domestic_badge": True,
         "has_uk_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "bensedin",
-        "currency": "USD",
-        "description": "Galenika Bensedin 10mg Diazepam tablets 30 tablets box with foil blisters.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 160, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 280, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 420, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 580, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "lorazepam-2mg",
-        "name": "Lorazepam 2mg",
-        "region": "usa",
-        "category_slug": "anxiety-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "OUT OF STOCK", "variant": "out-of-stock"}],
-        "image_key": "ativan",
-        "currency": "USD",
-        "description": "Ativan (Lorazepam) 2mg 100 tablets sealed box with blister sheets.",
-        "variants": [
-            {"quantity": 100, "label": "100 Tablets", "price": 350, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 650, "savings_label": None},
-            {"quantity": 500, "label": "500 Tablets", "price": 1300, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "zolpidem",
-        "name": "Zolpidem",
-        "region": "usa",
-        "category_slug": "insomnia",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "zolpidem",
+        "rating": 4.7,
+        "rating_count": 158,
+        "badges": [{"text": "Best Seller", "variant": "best-seller"}],
+        "image_key": "wide-brim-expedition-hat",
         "currency": "USD",
         "description": (
-            "Sandoz Zolpidem 10mg filmomhulde tabletten original European pharmaceutical "
-            "packaging."
+            "Wide-brim outdoor hat with an adjustable chin cord and embroidered front "
+            "lettering. Built for travel, hiking, and outfitter retailers."
         ),
-        "variants": [
-            {"quantity": 60, "label": "60 Tablets", "price": 520, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 720, "savings_label": None},
-            {"quantity": 150, "label": "150 Tablets", "price": 900, "savings_label": None},
-        ],
+        "variants": _USD_VARIANTS,
     },
+    # ---- EU catalog (EUR, ships from the EU warehouse) ----
     {
-        "slug": "zopiclone-10mg",
-        "name": "Zopiclone 10mg",
-        "region": "usa",
-        "category_slug": "insomnia",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "has_uk_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "zopiclone",
-        "currency": "USD",
-        "description": "Zopisign 10mg Zopiclone Tablets in 10x14 blister packing.",
-        "variants": [
-            {"quantity": 50, "label": "50 Tablets", "price": 280, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 480, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 780, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "tramadol-100mg",
-        "name": "Tramadol 100 mg",
-        "region": "usa",
-        "category_slug": "pain-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "tramadol",
-        "currency": "USD",
-        "description": "Tramadol HCl 100mg extended release capsules 10x10 pack.",
-        "variants": [
-            {"quantity": 30, "label": "30 Capsules", "price": 120, "savings_label": None},
-            {"quantity": 60, "label": "60 Capsules", "price": 220, "savings_label": None},
-            {"quantity": 120, "label": "120 Capsules", "price": 390, "savings_label": None},
-            {"quantity": 300, "label": "300 Capsules", "price": 900, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "tapentadol-100mg",
-        "name": "Tapentadol 100 mg",
-        "region": "usa",
-        "category_slug": "pain-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "tapentadol",
-        "currency": "USD",
-        "description": "Aspadol Tab Tapentadol Tablet 100mg 10x10 tablets box with orange pills.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 65, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": None},
-            {"quantity": 120, "label": "120 Tablets", "price": 210, "savings_label": None},
-            {"quantity": 300, "label": "300 Tablets", "price": 420, "savings_label": None},
-            {"quantity": 500, "label": "500 Tablets", "price": 600, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "soma-350mg",
-        "name": "Soma 350mg",
-        "region": "usa",
-        "category_slug": "pain-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "soma",
-        "currency": "USD",
-        "description": "Pain-O-Soma Carisoprodol Tablets IP 350mg blister pack.",
-        "variants": [
-            {"quantity": 50, "label": "50 Tablets", "price": 300, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 520, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 850, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "viagra-100mg",
-        "name": "Viagra 100mg",
-        "region": "usa",
-        "category_slug": "erectile-dysfunction",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "viagra",
-        "currency": "USD",
-        "description": "Cenforce-100 Sildenafil Citrate Tablets IP 100mg blue diamond pills.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 180, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 290, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 390, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 500, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "cialis-20mg",
-        "name": "Cialis 20 mg",
-        "region": "usa",
-        "category_slug": "erectile-dysfunction",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "cialis",
-        "currency": "USD",
-        "description": "Vidalista 20 Tadalafil Tablets 20mg 10x10 blister pack yellow tablets.",
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 180, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 290, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 390, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 500, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "gabapentin-800mg",
-        "name": "Gabapentin 800mg",
-        "region": "usa",
-        "category_slug": "pain-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "gabapentin",
-        "currency": "USD",
-        "description": "HEXAL Gabapentin 800mg filmtabletten 50 count high dose box.",
-        "variants": [
-            {"quantity": 50, "label": "50 Tablets", "price": 160, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 290, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 440, "savings_label": None},
-            {"quantity": 300, "label": "300 Tablets", "price": 580, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "pregabalin-300mg",
-        "name": "Pregabalin 300mg",
-        "region": "usa",
-        "category_slug": "pain-meds",
-        "is_best_seller": False,
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": None,
-        "image_key": "lyrica",
-        "currency": "USD",
-        "description": "Pfizer LYRICA Pregabalina 300mg 28 capsules box.",
-        "variants": [
-            {"quantity": 28, "label": "28 Capsules", "price": 180, "savings_label": None},
-            {"quantity": 56, "label": "56 Capsules", "price": 320, "savings_label": None},
-            {"quantity": 112, "label": "112 Capsules", "price": 490, "savings_label": None},
-            {"quantity": 200, "label": "200 Capsules", "price": 650, "savings_label": None},
-        ],
-    },
-    # ---- EU products (src/data/euProducts.ts) ----
-    {
-        "slug": "eu-modalert-200mg",
-        "name": "Modalert 200mg",
+        "slug": "eu-classic-bear-bucket-hat",
+        "name": "Classic Bear Bucket Hat",
         "region": "eu",
-        "category_slug": "adhd",
+        "category_slug": "bucket-hats",
         "is_best_seller": True,
         "has_usa_domestic_badge": False,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "EU TO EU DELIVERY", "variant": "eu-delivery"}],
-        "image_key": "modalert",
+        "rating": 4.8,
+        "rating_count": 121,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "classic-bear-bucket-hat",
         "currency": "EUR",
         "description": (
-            "Sun Pharma Modalert 200mg (Modafinil USP 200mg) premium tablets. Shipped directly "
-            "from within the EU with zero customs risk and rapid transit."
+            "Two-tone bucket hat with a playful embroidered bear motif. Dispatched from "
+            "our EU warehouse with domestic courier tracking."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 200, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 350, "savings_label": "Save €50"},
-            {"quantity": 100, "label": "100 Tablets", "price": 500, "savings_label": "Save €160"},
-            {"quantity": 200, "label": "200 Tablets", "price": 750, "savings_label": "Save €550"},
-        ],
+        "variants": _EUR_VARIANTS,
     },
     {
-        "slug": "eu-modvigil-200mg",
-        "name": "Modvigil 200mg",
+        "slug": "eu-expedition-wide-brim-sun-hat",
+        "name": "Expedition Wide-Brim Sun Hat",
         "region": "eu",
-        "category_slug": "adhd",
+        "category_slug": "sun-hats",
         "is_best_seller": True,
         "has_usa_domestic_badge": False,
-        "rating": 5,
-        "rating_count": None,
-        "badges": [{"text": "EU TO EU DELIVERY", "variant": "eu-delivery"}],
-        "image_key": "modvigil",
+        "rating": 4.7,
+        "rating_count": 84,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "wide-brim-expedition-hat",
         "currency": "EUR",
         "description": (
-            "HAB Pharma Modvigil 200mg (Modafinil USP 200mg). Trusted European stock dispatched "
-            "with express domestic courier tracking."
+            "Wide-brim outdoor hat with an adjustable chin cord and embroidered front "
+            "lettering. Dispatched from our EU warehouse with domestic courier tracking."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": "Save €20"},
-            {"quantity": 100, "label": "100 Tablets", "price": 200, "savings_label": "Save €30"},
-            {"quantity": 200, "label": "200 Tablets", "price": 380, "savings_label": "Save €80"},
-            {"quantity": 500, "label": "500 Tablets", "price": 600, "savings_label": "Save €550"},
-        ],
+        "variants": _EUR_VARIANTS,
     },
     {
-        "slug": "eu-waklert-150mg",
-        "name": "Waklert 150mg",
+        "slug": "eu-youth-script-dad-cap",
+        "name": "Youth Script Dad Cap",
         "region": "eu",
-        "category_slug": "adhd",
+        "category_slug": "baseball-caps",
         "is_best_seller": True,
         "has_usa_domestic_badge": False,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "EU TO EU DELIVERY", "variant": "eu-delivery"}],
-        "image_key": "waklert",
+        "rating": 4.6,
+        "rating_count": 59,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "youth-dad-cap",
         "currency": "EUR",
         "description": (
-            "Sun Pharma Waklert 150mg (Armodafinil USP 150mg). High potency nootropic tablets "
-            "dispatched with intra-EU guarantee."
+            "Low-profile cotton dad cap with a minimalist 'YOUTH' embroidery, available "
+            "in black, pink, and white. Dispatched from our EU warehouse."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 220, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 380, "savings_label": "Save €60"},
-            {"quantity": 100, "label": "100 Tablets", "price": 550, "savings_label": "Save €180"},
-            {"quantity": 200, "label": "200 Tablets", "price": 750, "savings_label": "Save €710"},
-        ],
+        "variants": _EUR_VARIANTS,
     },
     {
-        "slug": "eu-artvigil-150mg",
-        "name": "Artvigil 150mg",
+        "slug": "eu-little-bear-pom-beanie",
+        "name": "Little Bear Pom Beanie",
         "region": "eu",
-        "category_slug": "adhd",
+        "category_slug": "beanies",
         "is_best_seller": True,
         "has_usa_domestic_badge": False,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "EU TO EU DELIVERY", "variant": "eu-delivery"}],
-        "image_key": "artvigil-150",
+        "rating": 4.9,
+        "rating_count": 142,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "bear-pom-beanie",
         "currency": "EUR",
         "description": (
-            "HAB Pharma Artvigil 150mg (Armodafinil 150mg). Authentic blister packs stocked in "
-            "Europe for immediate delivery."
+            "Knit toddler beanie with two oversized pom-poms and a soft folded cuff, "
+            "offered in five colorways. Dispatched from our EU warehouse."
         ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 70, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": "Save €20"},
-            {"quantity": 100, "label": "100 Tablets", "price": 200, "savings_label": "Save €30"},
-            {"quantity": 200, "label": "200 Tablets", "price": 380, "savings_label": "Save €80"},
-            {"quantity": 500, "label": "500 Tablets", "price": 600, "savings_label": "Save €550"},
-        ],
+        "variants": _EUR_VARIANTS,
     },
     {
-        "slug": "eu-artvigil-250mg",
-        "name": "Artvigil 250mg",
+        "slug": "eu-heritage-wool-beret",
+        "name": "Heritage Wool Beret",
         "region": "eu",
-        "category_slug": "adhd",
-        "is_best_seller": True,
-        # Reproduced verbatim from euProducts.ts, which set this true even
-        # though it's an EU product — not fixed here, only migrated as-is.
-        "has_usa_domestic_badge": True,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "OUT OF STOCK", "variant": "out-of-stock"}],
-        "image_key": "artvigil-250",
-        "currency": "EUR",
-        "description": (
-            "HAB Pharma Artvigil 250mg ultra high strength Armodafinil. Currently out of stock "
-            "in EU warehouses. Restock arriving soon."
-        ),
-        "variants": [
-            {"quantity": 30, "label": "30 Tablets", "price": 65, "savings_label": None},
-            {"quantity": 60, "label": "60 Tablets", "price": 120, "savings_label": None},
-            {"quantity": 100, "label": "100 Tablets", "price": 220, "savings_label": None},
-            {"quantity": 200, "label": "200 Tablets", "price": 420, "savings_label": None},
-            {"quantity": 500, "label": "500 Tablets", "price": 800, "savings_label": None},
-        ],
-    },
-    {
-        "slug": "eu-kamagra-100mg-oral-jelly",
-        "name": "Kamagra 100mg Oral Jelly",
-        "region": "eu",
-        "category_slug": "erectile-dysfunction",
+        "category_slug": "berets",
         "is_best_seller": False,
         "has_usa_domestic_badge": False,
-        "rating": 0,
-        "rating_count": None,
-        "badges": [{"text": "EU TO EU DELIVERY", "variant": "eu-delivery"}],
-        "image_key": "kamagra",
+        "rating": 4.5,
+        "rating_count": 37,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "wool-beret",
         "currency": "EUR",
         "description": (
-            "Ajanta Pharma Kamagra 100mg Oral Jelly (Sildenafil Citrate 100mg). Fast acting oral "
-            "gel with assorted fruit flavors."
+            "Classic wool beret in eight solid colorways, finished with a soft knit "
+            "headband. Dispatched from our EU warehouse with domestic courier tracking."
         ),
-        "variants": [
-            {"quantity": 7, "label": "7 Sachets (1 Pack)", "price": 90, "savings_label": None},
-            {"quantity": 14, "label": "14 Sachets (2 Packs)", "price": 140, "savings_label": "Save €40"},
-            {"quantity": 21, "label": "21 Sachets (3 Packs)", "price": 180, "savings_label": "Save €90"},
-            {"quantity": 28, "label": "28 Sachets (4 Packs)", "price": 240, "savings_label": "Save €120"},
-        ],
+        "variants": _EUR_VARIANTS,
+    },
+    {
+        "slug": "eu-sunset-tie-dye-bucket-hat",
+        "name": "Sunset Tie-Dye Bucket Hat",
+        "region": "eu",
+        "category_slug": "bucket-hats",
+        "is_best_seller": False,
+        "has_usa_domestic_badge": False,
+        "rating": 4.7,
+        "rating_count": 63,
+        "badges": [{"text": "EU Warehouse", "variant": "eu-delivery"}],
+        "image_key": "tie-dye-bucket-hat",
+        "currency": "EUR",
+        "description": (
+            "Fluffy tie-dye faux-fur bucket hat in a rotating mix of pastel colorways. "
+            "Dispatched from our EU warehouse with domestic courier tracking."
+        ),
+        "variants": _EUR_VARIANTS,
     },
 ]

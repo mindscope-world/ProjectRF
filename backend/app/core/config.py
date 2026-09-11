@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # instead of silently exposing the panel.
     admin_api_key: str = ""
 
+    # Where admin-uploaded product photos are written on disk. Served back
+    # out at /uploads/* (see app/main.py's StaticFiles mount) so a product's
+    # imageKey/storage_key can be a real URL the storefront can <img src=>
+    # directly, instead of a key the frontend bundle has to know about ahead
+    # of time — see app/services/uploads.py.
+    uploads_dir: str = "uploads"
+
 
 @lru_cache
 def get_settings() -> Settings:

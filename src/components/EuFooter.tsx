@@ -24,33 +24,33 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
       case 'Contact Us':
         setModalContent({
           title: 'Contact Us',
-          body: 'For fast intra-EU support, please contact our European fulfillment desk at support@eurofinil.is. Our support desk operates 24/7 with average response times under 8 hours.',
+          body: 'For fast EU support, please contact our European fulfillment desk at support@brimline-eu.example. Our support desk operates 24/7 with average response times under 8 hours.',
         });
         break;
-      case 'Donate to Gaza':
+      case 'Community Give-Back':
         setModalContent({
-          title: 'Donate to Gaza Relief',
-          body: 'Eurofinil proudly supports humanitarian emergency relief funds that provide clean water, hot meals, and essential medical supplies to children and families in Gaza.',
+          title: 'Community Give-Back Program',
+          body: 'Brimline Europe donates a portion of every bulk order to local youth sports leagues, helping supply teams with practice gear and uniforms.',
         });
         break;
       case 'Facebook':
       case 'Twitter':
         setModalContent({
           title: `${name} Community`,
-          body: `Join our active ${name} discussions for nootropic research summaries, batch laboratory test certificates, and intra-EU shipping schedule updates.`,
+          body: `Join our active ${name} discussions for restock alerts, bulk-order tips, and EU shipping schedule updates.`,
         });
         break;
       case 'FAQs':
         setModalContent({
           title: 'Frequently Asked Questions',
-          body: '• Intra-EU Shipping: Dispatched from within the EU (Spain/Netherlands) - 0% customs inspection risk.\n• Delivery Time: 2 to 4 business days with full courier tracking.\n• SEPA Transfers: 0% fee IBAN payments supported across all Eurozone banks.\n• Bitcoin Discount: 5% automatic discount at checkout.',
+          body: '• EU Shipping: Dispatched from our EU warehouse (Spain/Netherlands).\n• Delivery Time: 2 to 4 business days with full courier tracking.\n• SEPA Transfers: 0% fee IBAN payments supported across all Eurozone banks.\n• Bitcoin Discount: 5% automatic discount at checkout.',
         });
         break;
       case 'Reviews.io':
       case 'Smartcustomer.com':
         setModalContent({
           title: `Verified Reviews on ${name}`,
-          body: `Eurofinil holds an average rating of 4.9/5 stars on ${name} with thousands of verified intra-EU delivery testimonials.`,
+          body: `Brimline Europe holds an average rating of 4.9/5 stars on ${name} with thousands of verified EU delivery testimonials.`,
         });
         break;
       default:
@@ -82,11 +82,11 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
               <li>
                 <button
                   type="button"
-                  onClick={() => handleLinkClick('Donate to Gaza')}
+                  onClick={() => handleLinkClick('Community Give-Back')}
                   className="hover:text-[#fed000] transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <span className="text-[#888888]">&gt;</span>
-                  <span>Donate to Gaza</span>
+                  <span>Community Give-Back</span>
                 </button>
               </li>
             </ul>
@@ -174,7 +174,7 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left: Copyright */}
           <div className="text-sm text-[#8e8e8e]">
-            &copy; 2025 Eurofinil
+            &copy; 2025 Brimline Europe
           </div>
 
           {/* Right: Payment Icons + Scroll-To-Top Button */}

@@ -145,92 +145,30 @@ export default function App() {
       const text = `${p.name} ${p.description || ''}`.toLowerCase();
 
       switch (selectedCategory) {
-        case 'ADHD':
-          return (
-            text.includes('strattera') ||
-            text.includes('atomoxetine') ||
-            text.includes('modafinil') ||
-            text.includes('modalert') ||
-            text.includes('waklert') ||
-            text.includes('artvigil') ||
-            text.includes('modvigil') ||
-            text.includes('fentermina') ||
-            text.includes('phentermine') ||
-            text.includes('modasmart')
-          );
+        case 'Bucket Hats':
+          return text.includes('bucket hat');
 
-        case 'Anxiety meds':
-          return (
-            text.includes('xanax') ||
-            text.includes('farmapram') ||
-            text.includes('clonazepam') ||
-            text.includes('diazepam') ||
-            text.includes('bensedin') ||
-            text.includes('lorazepam') ||
-            text.includes('ativan') ||
-            text.includes('alprazolam')
-          );
+        case 'Baseball Caps':
+          return text.includes('cap') && !text.includes('bucket');
+
+        case 'Beanies':
+          return text.includes('beanie');
+
+        case 'Sun Hats':
+          return text.includes('sun hat');
+
+        case 'Berets':
+          return text.includes('beret');
 
         case 'Best Sellers':
-          return (
-            p.category === 'bestseller' ||
-            text.includes('modalert') ||
-            text.includes('waklert') ||
-            text.includes('phentermine') ||
-            text.includes('xanax')
-          );
-
-        case 'Erectile dysfunction':
-          return (
-            text.includes('viagra') ||
-            text.includes('cenforce') ||
-            text.includes('cialis') ||
-            text.includes('vidalista') ||
-            text.includes('sildenafil') ||
-            text.includes('tadalafil') ||
-            text.includes('kamagra')
-          );
-
-        case 'Insomnia':
-          return (
-            text.includes('zolpidem') ||
-            text.includes('zopiclone') ||
-            text.includes('zopisign') ||
-            text.includes('nitrazepam') ||
-            text.includes('ambien')
-          );
-
-        case 'Pain Meds':
-          return (
-            text.includes('tramadol') ||
-            text.includes('tapentadol') ||
-            text.includes('aspadol') ||
-            text.includes('soma') ||
-            text.includes('carisoprodol') ||
-            text.includes('gabapentin') ||
-            text.includes('lyrica') ||
-            text.includes('pregabalin')
-          );
-
-        case 'Weight Loss':
-          return (
-            text.includes('phentermine') ||
-            text.includes('acxion') ||
-            text.includes('fentermina')
-          );
+          return p.category === 'bestseller';
 
         case 'USA To USA':
         case 'USA Domestic':
           return !!p.hasUsaDomesticBadge;
 
         case 'UK to UK':
-          return (
-            text.includes('bensedin') ||
-            text.includes('diazepam') ||
-            text.includes('modalert') ||
-            text.includes('waklert') ||
-            text.includes('zopiclone')
-          );
+          return !!p.hasUkDomesticBadge;
 
         default:
           return true;
@@ -614,17 +552,17 @@ export default function App() {
                 r/
               </div>
               <div>
-                <h3 className="font-black text-lg text-gray-900">r/RapidFinil &amp; r/Eurofinil</h3>
+                <h3 className="font-black text-lg text-gray-900">r/Brimline</h3>
                 <p className="text-xs text-gray-500">Official Reddit Community • 14.8k Members</p>
               </div>
             </div>
 
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-              Join our subreddit to read unfiltered customer delivery reviews, batch laboratory purity tests, shipping timeline updates for USA and Intra-EU routes, and nootropic dosage guidelines.
+              Join our subreddit for unfiltered customer delivery reviews, restock alerts, bulk-order tips for boutiques and resellers, and shipping timeline updates for USA and EU warehouses.
             </p>
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 mb-5">
-              <span className="font-bold">Community Rules:</span> Respectful harm-reduction discussion only. Verified moderators respond within 4 hours.
+              <span className="font-bold">Community Rules:</span> Keep it friendly and on-topic. Verified moderators respond within 4 hours.
             </div>
 
             <div className="flex gap-3 justify-end">

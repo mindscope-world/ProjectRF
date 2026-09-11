@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle2, ChevronDown } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Copy } from 'lucide-react';
 import { CartItem } from '../types';
 import { COUNTRIES } from '../constants/countries';
 import {
   ApiError,
+  buildRampWidgetUrl,
   computeOrderTotals,
   capturePayment,
   createOrder,
@@ -77,6 +78,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<OrderResult | null>(null);
+  // Set only when checkoutMode="ramp" but VITE_RAMP_HOST_API_KEY isn't
+  // configured — there's nowhere to redirect, so show the raw address
+  // instead of pretending the order is complete.
+  const [manualCryptoPayment, setManualCryptoPayment] = useState<{
+    order: OrderResult;
+    address: string;
+    amount: number;
+    currency: string;
+  } | null>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const currency = items[0]?.currency || '$';
@@ -144,7 +154,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
 
     setSubmitting(true);
     try {
-      const { payment } = await createOrder(
+      const { order, payment } = await createOrder(
         {
           email: email.trim(),
           shippingAddress,
@@ -154,10 +164,41 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
         },
         idempotencyKey
       );
-
-      const { order: capturedOrder } = await capturePayment(payment.id, 'succeed');
-
       saveAddress(shippingAddress);
+
+      // The order now exists (awaiting_payment) — how the customer actually
+      // pays depends on what the backend configured (backend/README.md's
+      // "Card-to-Bitcoin via Ramp Network" section):
+      if (payment.checkoutMode === 'btcpay' && payment.checkoutUrl) {
+        // Direct crypto payment: BTCPay's own hosted checkout page. The
+        // order stays "awaiting_payment" until BTCPay's webhook confirms
+        // it server-side — there's nothing more to do here but send the
+        // customer there.
+        window.location.href = payment.checkoutUrl;
+        return;
+      }
+
+      if (payment.checkoutMode === 'ramp' && payment.cryptoAddress) {
+        const rampUrl = buildRampWidgetUrl(payment.cryptoAddress, order.totalAmount, order.currency);
+        if (rampUrl) {
+          window.location.href = rampUrl;
+          return;
+        }
+        // VITE_RAMP_HOST_API_KEY isn't configured — nowhere to redirect.
+        // Show the raw address rather than pretend the order is complete.
+        setManualCryptoPayment({
+          order,
+          address: payment.cryptoAddress,
+          amount: order.totalAmount,
+          currency: order.currency,
+        });
+        return;
+      }
+
+      // checkoutMode === "none": no real provider configured (dev/CI
+      // default) — fall back to the fake provider's instant capture so the
+      // whole flow stays demoable without any credentials.
+      const { order: capturedOrder } = await capturePayment(payment.id, 'succeed');
       setConfirmedOrder(capturedOrder);
       onOrderPlaced(capturedOrder);
     } catch (err) {
@@ -167,6 +208,45 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
       setSubmitting(false);
     }
   };
+
+  if (manualCryptoPayment) {
+    return (
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Complete your Bitcoin payment</h1>
+        <p className="text-sm text-gray-600 mb-6">
+          Order <span className="font-bold text-gray-900">{manualCryptoPayment.order.orderNumber}</span> is
+          reserved and awaiting payment. Send exactly{' '}
+          <span className="font-bold text-gray-900">
+            {manualCryptoPayment.currency === 'USD' ? '$' : '€'}
+            {manualCryptoPayment.amount.toFixed(2)}
+          </span>{' '}
+          worth of BTC to the address below — your order confirms automatically once the payment is detected.
+        </p>
+        <div className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded font-mono text-sm text-gray-900 break-all mb-2">
+          {manualCryptoPayment.address}
+          <button
+            type="button"
+            onClick={() => navigator.clipboard?.writeText(manualCryptoPayment.address)}
+            className="p-1 text-gray-500 hover:text-gray-900 cursor-pointer shrink-0"
+            title="Copy address"
+          >
+            <Copy className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mb-6">
+          A card-payment widget isn&apos;t configured on this store yet — this address accepts a direct
+          wallet payment in the meantime.
+        </p>
+        <button
+          type="button"
+          onClick={onBackToCart}
+          className="px-6 py-2.5 bg-[#fed000] hover:bg-[#ffc800] text-gray-950 text-sm font-bold rounded shadow-xs cursor-pointer"
+        >
+          Continue Shopping
+        </button>
+      </main>
+    );
+  }
 
   if (confirmedOrder) {
     return (
@@ -563,30 +643,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
             <span>I have read and agree to the website terms and conditions *</span>
           </label>
 
-          <div className="border border-red-200 bg-red-50 rounded-lg p-4 mb-6 text-xs text-gray-700 space-y-2">
-            <p className="font-bold text-red-800">And some additional terms and conditions, PLEASE READ</p>
-            <p className="font-bold text-gray-900">Warning to new customers</p>
-            <p>
-              If you are first time buyer then place order only if you are ready to pay within 48 hours of
-              receiving payment link. If you have any doubt on our website then get the fuck outta here and
-              dont order from our precious website. Nobody will convince you to order. Order only if you have
-              full confidence.
-            </p>
+          <div className="border border-gray-200 bg-gray-50 rounded-lg p-4 mb-6 text-xs text-gray-700 space-y-2">
+            <p className="font-bold text-gray-900">A few notes before you order</p>
             <ol className="list-decimal list-inside space-y-1">
-              <li>
-                I confirm that I am not a hurried worried and bothering customer and I will wait for 48 hours
-                for your replies for anything before sending a second email.
-              </li>
-              <li>I understand that you didn&apos;t invite or ask me to order, so you are not obliged to prove your legitimacy to me.</li>
-              <li>I confirm I will not ask for tracking until it&apos;s been a minimum of 48 hours (3 days) after payment.</li>
-              <li>
-                I understand you can permanently ban me anytime you want and refund my money. You are free to
-                not do business with anyone who you think is unfit to be your customer.
-              </li>
-              <li>
-                I understand that you mostly ship within 24-48 hours but sometimes orders can get delayed a bit
-                and I am totally fine with it.
-              </li>
+              <li>Payment links are typically sent within a few hours of placing your order.</li>
+              <li>Most orders ship within 24-48 hours of payment being confirmed.</li>
+              <li>Tracking numbers are emailed as soon as your order is dispatched.</li>
+              <li>Questions about a bulk or custom order? Reach out any time — see Contact Us below.</li>
             </ol>
           </div>
 

@@ -77,12 +77,12 @@ export const CategoryDrawer: React.FC<CategoryDrawerProps> = ({
         {/* Bottom Banner */}
         <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
           <p className="text-xs font-bold text-gray-800">Need Custom Orders?</p>
-          <p className="text-[11px] text-gray-500 mt-0.5">Email us for off-site bulk orders</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">Email us for custom quantities or embroidery</p>
           <a
-            href="mailto:support@rapidfinil.is"
+            href="mailto:support@brimline.example"
             className="inline-block mt-2 text-xs font-bold text-[#0066cc] hover:underline"
           >
-            support@rapidfinil.is
+            support@brimline.example
           </a>
         </div>
       </div>

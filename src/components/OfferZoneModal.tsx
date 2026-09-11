@@ -70,7 +70,7 @@ export const OfferZoneModal: React.FC<OfferZoneModalProps> = ({ isOpen, onClose 
                 </span>
               </div>
               <p className="text-[11px] text-gray-600 mt-1">
-                USPS domestic tracking included on all orders. Guaranteed no customs inspection.
+                USPS domestic tracking included on all orders, with delivery in 3 business days.
               </p>
             </div>
           </div>
@@ -85,15 +85,15 @@ export const OfferZoneModal: React.FC<OfferZoneModalProps> = ({ isOpen, onClose 
                 <h4 className="text-xs font-bold text-gray-900">Bulk Order Bonus</h4>
                 <button
                   type="button"
-                  onClick={() => handleCopy('RAPID10')}
+                  onClick={() => handleCopy('BRIM10')}
                   className="flex items-center gap-1 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition-colors"
                 >
-                  {copiedCode === 'RAPID10' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedCode === 'RAPID10' ? 'COPIED' : 'RAPID10'}</span>
+                  {copiedCode === 'BRIM10' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedCode === 'BRIM10' ? 'COPIED' : 'BRIM10'}</span>
                 </button>
               </div>
               <p className="text-[11px] text-gray-600 mt-1">
-                Use coupon code <span className="font-mono font-bold text-emerald-800">RAPID10</span> for orders over $300 to receive extra sample blisters.
+                Use coupon code <span className="font-mono font-bold text-emerald-800">BRIM10</span> for orders over $300 to receive a free bonus item in your pack.
               </p>
             </div>
           </div>

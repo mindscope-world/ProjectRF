@@ -18,6 +18,11 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    volumes:
+      # Admin-uploaded product photos (see app/services/uploads.py) — without
+      # this they'd live only in the container's writable layer and vanish
+      # on the next `docker compose up --build`/recreate.
+      - uploads_data:/app/uploads
     restart: unless-stopped
 
   worker:
@@ -77,3 +82,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:

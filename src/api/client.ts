@@ -3,7 +3,13 @@ import { CartItem, Product } from '../types';
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
 
-const SESSION_STORAGE_KEY = 'rapidfinil_session_id';
+// Admin-uploaded product photos are served from the API's origin at
+// /uploads/... (see backend/app/main.py's StaticFiles mount), not under the
+// /api/v1 prefix — this strips that prefix off so ProductArtwork can turn a
+// relative "/uploads/products/xyz.jpg" imageKey into a full URL.
+export const API_ORIGIN = new URL(API_BASE_URL).origin;
+
+const SESSION_STORAGE_KEY = 'brimline_session_id';
 
 /**
  * Guest-cart identity until the backend's Phase 2 (Auth) lands. Generated
@@ -134,12 +140,23 @@ export interface OrderResult {
   createdAt: string;
 }
 
+export type CheckoutMode = 'none' | 'btcpay' | 'ramp';
+
 export interface PaymentResult {
   id: string;
   provider: string;
   status: string;
   amount: number;
   currency: string;
+  // "none": no real provider configured — the existing auto-capture demo
+  //   flow applies (see App.tsx handleOrderPlaced).
+  // "btcpay": redirect the browser to checkoutUrl — BTCPay's own hosted
+  //   checkout page (direct crypto payment, customer's own wallet).
+  // "ramp": open a Ramp Network widget targeting cryptoAddress (card
+  //   payment that settles as BTC into the same BTCPay-watched wallet).
+  checkoutMode: CheckoutMode;
+  checkoutUrl: string | null;
+  cryptoAddress: string | null;
 }
 
 export interface OrderWithPayment {
@@ -161,8 +178,11 @@ export interface CreateOrderPayload {
 // CartPage/CheckoutPage can show live totals before an order is actually
 // created. The backend recomputes and charges this independently — this
 // function is display-only, never trusted as the source of truth.
-const FLAT_SHIPPING_RATE = 15;
-const TAX_RATE = 0.05;
+// Shipping and tax are zeroed so the total equals the product subtotal, for
+// cheap end-to-end crypto-checkout testing — keep in sync with the backend
+// constants and restore realistic values before launch.
+const FLAT_SHIPPING_RATE = 0;
+const TAX_RATE = 0;
 const CRYPTO_DISCOUNT_RATE = 0.05;
 
 export interface OrderTotals {
@@ -201,7 +221,7 @@ export function createOrder(
   });
 }
 
-const ADDRESS_STORAGE_KEY = 'rapidfinil_shipping_address';
+const ADDRESS_STORAGE_KEY = 'brimline_shipping_address';
 
 /** Last address the guest entered at checkout — there's no account to save it
  * to (Phase 2), so CartPage's "Shipping to ..." summary and CheckoutPage's
@@ -228,4 +248,24 @@ export function capturePayment(
     method: 'POST',
     body: JSON.stringify({ outcome }),
   });
+}
+
+const RAMP_HOST_API_KEY = (import.meta.env.VITE_RAMP_HOST_API_KEY as string | undefined) || '';
+
+/** Card-to-Bitcoin on-ramp: Ramp buys BTC by card and sends it to
+ * `cryptoAddress` — the same BTCPay-watched, self-custodied wallet address
+ * a direct crypto payer's invoice would use. See backend/README.md's
+ * "Card-to-Bitcoin via Ramp Network" section for the full contract.
+ * Returns null if VITE_RAMP_HOST_API_KEY isn't configured — the caller
+ * should fall back to a manual-payment display in that case. */
+export function buildRampWidgetUrl(cryptoAddress: string, fiatAmount: number, fiatCurrency: string): string | null {
+  if (!RAMP_HOST_API_KEY) return null;
+  const params = new URLSearchParams({
+    hostApiKey: RAMP_HOST_API_KEY,
+    swapAsset: 'BTC',
+    userAddress: cryptoAddress,
+    fiatValue: fiatAmount.toFixed(2),
+    fiatCurrency,
+  });
+  return `https://app.ramp.network/?${params.toString()}`;
 }

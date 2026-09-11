@@ -24,12 +24,13 @@ export const ContactUs: React.FC = () => {
           <div className="flex-1">
             <p className="mb-4">
               <span className="font-semibold text-gray-900">Email:</span> <br/>
-              <a href="mailto:support@rapidfinil.is" className="text-[#fed000] hover:underline">
-                support@rapidfinil.is
+              <a href="mailto:support@brimline.example" className="text-[#fed000] hover:underline">
+                support@brimline.example
               </a>
             </p>
             <p className="text-gray-600 leading-relaxed">
-              Do Not Email Us For Any General Enquiry Unless You Have Placed Order With Us In Past and PAID ! Serious Customers Just Place Order Straight. If you send us any general enquiry as a non-customer, be ready to get a rude reply and you may get harassed. We don't entertain time-wasters. our time is more precious to us than any potential new customer.
+              Whether you're placing your first bulk order or following up on one already in progress, our support
+              team is happy to help with sizing, colorway availability, and order timelines.
             </p>
           </div>
         </div>
@@ -40,8 +41,8 @@ export const ContactUs: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <p className="text-gray-700 leading-relaxed">
               For fast assistance, please email our support team directly at
-              <a href="mailto:support@rapidfinil.is" className="text-[#fed000] hover:underline font-medium">
-                support@rapidfinil.is
+              <a href="mailto:support@brimline.example" className="text-[#fed000] hover:underline font-medium">
+                support@brimline.example
               </a>. Our support desk operates 24/7 with average response times under 8 hours.
             </p>
           </div>
@@ -62,23 +63,24 @@ export const ContactUs: React.FC = () => {
               <div className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                 <h3 className="font-semibold text-gray-900 mb-2">What is your return policy?</h3>
                 <p className="text-gray-700">
-                  We guarantee 100% successful delivery. If any package is delayed or damaged during domestic transit,
-                  we provide an immediate free reshipment or full refund. No questions asked.
+                  If any package is delayed or arrives damaged during transit, we provide a free reshipment or a
+                  full refund — just reach out with your order number.
                 </p>
               </div>
 
               <div className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                 <h3 className="font-semibold text-gray-900 mb-2">Is my information secure?</h3>
                 <p className="text-gray-700">
-                  All purchases are shielded by our 100% domestic delivery guarantee, discreet plain packaging,
-                  and encrypted checkout security. We never store sensitive payment information.
+                  All purchases are protected by encrypted checkout security. We never store sensitive payment
+                  information.
                 </p>
               </div>
 
               <div className="last:border-b-0 last:pb-0">
                 <h3 className="font-semibold text-gray-900 mb-2">Do you offer discounts?</h3>
                 <p className="text-gray-700">
-                  Yes! We offer an automatic 5% discount at checkout when paying with Bitcoin.
+                  Yes! We offer an automatic 5% discount at checkout when paying with Bitcoin, and bulk-order
+                  pricing scales automatically as your pack size goes up.
                 </p>
               </div>
             </div>
@@ -92,7 +94,7 @@ export const ContactUs: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             {/* Left: Copyright */}
             <div className="text-sm text-[#8e8e8e]">
-              &copy; 2025 RapidFinil
+              &copy; 2025 Brimline
             </div>
 
             {/* Right: Simple Links */}

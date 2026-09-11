@@ -45,24 +45,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectOptio
               </div>
             );
           }
-          if (badge.variant === 'sealed-bottle') {
+          if (badge.variant === 'quality-checked') {
             return (
               <div
                 key={idx}
                 className="bg-[#fed000] text-black text-[10px] font-black px-2 py-0.5 rounded-xs uppercase shadow-xs leading-none"
               >
-                SEALED<br />BOTTLE
+                QUALITY<br />CHECKED
               </div>
             );
           }
-          if (badge.variant === 'no-fent') {
+          if (badge.variant === 'ships-fast') {
             return (
               <div
                 key={idx}
                 className="bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs flex items-center gap-1 shadow-xs"
               >
                 <span>✓</span>
-                <span>Tested No Fent</span>
+                <span>Ships Fast</span>
+              </div>
+            );
+          }
+          if (badge.variant === 'best-seller') {
+            return (
+              <div
+                key={idx}
+                className="bg-emerald-600 text-white text-[11px] font-black px-2 py-0.5 rounded-xs uppercase tracking-tight shadow-xs leading-none"
+              >
+                Best Seller
               </div>
             );
           }
@@ -72,7 +82,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectOptio
                 key={idx}
                 className="bg-[#fed000] text-black text-[11px] font-black px-2.5 py-1 rounded-xs uppercase tracking-tight shadow-md -rotate-2 border border-black/10 select-none"
               >
-                EU TO EU DELIVERY
+                EU WAREHOUSE
               </div>
             );
           }

@@ -85,31 +85,36 @@ export const TrustBadges: React.FC = () => {
           </div>
         </div>
 
-        {/* Badge 3: No Custom Involvements Officer */}
+        {/* Badge 3: Quality Checked Seal */}
         <div className="flex flex-col items-center select-none group hover:scale-105 transition-transform duration-300">
           <div className="relative w-36 h-36 flex items-center justify-center">
             <svg viewBox="0 0 130 130" className="w-full h-full drop-shadow-lg">
-              {/* Officer Circle */}
+              {/* Seal Circle */}
               <circle cx="65" cy="55" r="40" fill="#38bdf8" stroke="#0284c7" strokeWidth="3" />
-              {/* Police cap */}
-              <path d="M 32,36 Q 65,18 98,36 L 90,46 Q 65,36 40,46 Z" fill="#1e3a8a" />
-              <ellipse cx="65" cy="46" rx="28" ry="4" fill="#000000" />
-              <polygon points="65,24 68,30 74,30 69,34 71,40 65,36 59,40 61,34 56,30 62,30" fill="#facc15" />
-              {/* Face */}
-              <ellipse cx="65" cy="58" rx="20" ry="18" fill="#fdba74" />
-              {/* Aviator Sunglasses */}
-              <path d="M 48,52 Q 56,50 63,52 L 63,60 Q 56,66 48,60 Z" fill="#0f172a" stroke="#d97706" strokeWidth="1.5" />
-              <path d="M 67,52 Q 74,50 82,52 L 82,60 Q 74,66 67,60 Z" fill="#0f172a" stroke="#d97706" strokeWidth="1.5" />
-              <line x1="63" y1="53" x2="67" y2="53" stroke="#d97706" strokeWidth="2" />
-              {/* Mustache */}
-              <path d="M 57,68 Q 65,65 73,68 Q 65,71 57,68" fill="#78350f" />
-              {/* No Custom Involvements 3D text banner */}
+              {/* Scalloped edge */}
+              {[...Array(16)].map((_, i) => {
+                const angle = (i * 22.5 * Math.PI) / 180;
+                const cx = 65 + 42 * Math.cos(angle);
+                const cy = 55 + 42 * Math.sin(angle);
+                return <circle key={i} cx={cx} cy={cy} r="4" fill="#0284c7" />;
+              })}
+              <circle cx="65" cy="55" r="34" fill="#f0f9ff" stroke="#38bdf8" strokeWidth="2" />
+              {/* Checkmark */}
+              <path
+                d="M 46,55 L 58,67 L 86,38"
+                fill="none"
+                stroke="#0284c7"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Quality Checked text banner */}
               <rect x="5" y="82" width="120" height="34" rx="6" fill="#f8fafc" stroke="#38bdf8" strokeWidth="2" />
               <text x="65" y="97" textAnchor="middle" fill="#0369a1" fontSize="11" fontWeight="900" fontFamily="Arial Black">
-                No Custom
+                Quality
               </text>
               <text x="65" y="111" textAnchor="middle" fill="#0284c7" fontSize="10" fontWeight="900" fontFamily="Arial Black">
-                Involvements!
+                Checked!
               </text>
             </svg>
           </div>

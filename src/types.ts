@@ -18,9 +18,10 @@ export interface Product {
   ratingCount?: number;
   badges?: {
     text: string;
-    variant: 'price-drop' | 'back-in-stock' | 'out-of-stock' | 'sealed-bottle' | 'no-fent' | 'eu-delivery';
+    variant: 'price-drop' | 'back-in-stock' | 'out-of-stock' | 'quality-checked' | 'ships-fast' | 'best-seller' | 'eu-delivery';
   }[];
   hasUsaDomesticBadge?: boolean;
+  hasUkDomesticBadge?: boolean;
   imageKey: string;
   options: ProductOption[];
   description?: string;

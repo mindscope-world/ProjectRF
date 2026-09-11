@@ -120,10 +120,10 @@ export const Hero: React.FC<HeroProps> = ({ onWhyChooseUsClick }) => {
           3 Day Delivery
         </h1>
 
-          {/* World's Best Modafinil Store Blue Pill Badge */}
+          {/* World's Best Headwear Store Blue Pill Badge */}
           <div className="mt-3 mb-6 inline-block bg-[#1a5baf] hover:bg-[#164e96] transition-colors border border-blue-400/40 rounded-full px-7 py-2.5 shadow-lg">
             <span className="text-lg sm:text-xl md:text-2xl font-black tracking-wide text-white">
-              World&apos;s Best Modafinil Store
+              World&apos;s Best Headwear Store
             </span>
           </div>
 
