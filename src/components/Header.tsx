@@ -47,49 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onLogoClick}
               className="flex items-center gap-2 group cursor-pointer text-left focus:outline-none"
             >
-              {isEuPage ? (
-                /* Brimline Europe EU Stars Ring Logo */
-                <div className="flex items-center gap-2">
-                  <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-                      {/* Ring of 12 Golden Stars */}
-                      {[...Array(12)].map((_, i) => {
-                        const angle = (i * 30 * Math.PI) / 180;
-                        const cx = 50 + 38 * Math.sin(angle);
-                        const cy = 50 - 38 * Math.cos(angle);
-                        return (
-                          <polygon
-                            key={i}
-                            points={`${cx},${cy - 5} ${cx + 1.5},${cy - 1.5} ${cx + 5},${cy - 1.5} ${cx + 2.5},${cy + 1} ${cx + 3.5},${cy + 4.5} ${cx},${cy + 2.5} ${cx - 3.5},${cy + 4.5} ${cx - 2.5},${cy + 1} ${cx - 5},${cy - 1.5} ${cx - 1.5},${cy - 1.5}`}
-                            fill="#f59e0b"
-                            stroke="#b45309"
-                            strokeWidth="0.5"
-                          />
-                        );
-                      })}
-                      {/* Central flame */}
-                      <path
-                        d="M 50,22 C 58,35 68,44 68,58 C 68,69 60,76 50,76 C 40,76 32,69 32,58 C 32,46 44,36 50,22 Z"
-                        fill="#dc2626"
-                      />
-                      <path
-                        d="M 50,34 C 55,42 60,49 60,58 C 60,65 55,70 50,70 C 45,70 40,65 40,58 C 40,50 46,43 50,34 Z"
-                        fill="#f97316"
-                      />
-                      <path
-                        d="M 50,44 C 53,50 56,54 56,60 C 56,64 53,67 50,67 C 47,67 44,64 44,60 C 44,55 48,51 50,44 Z"
-                        fill="#fde047"
-                      />
-                    </svg>
-                  </div>
-                  <div className="text-xl md:text-2xl font-black italic tracking-tighter text-red-700 leading-none drop-shadow-[0_2px_1px_rgba(255,255,255,0.8)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">
-                    <span className="text-red-700">Brim</span>
-                    <span className="text-amber-300">line</span>
-                  </div>
-                </div>
-              ) : (
-                <BrandLogo height={36} />
-              )}
+              <BrandLogo height={36} />
             </button>
           </div>
 

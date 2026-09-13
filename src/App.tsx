@@ -553,7 +553,7 @@ export default function App() {
                 r/
               </div>
               <div>
-                <h3 className="font-black text-lg text-gray-900">r/Brimline</h3>
+                <h3 className="font-black text-lg text-gray-900">r/Rapidfinil</h3>
                 <p className="text-xs text-gray-500">Official Reddit Community • 14.8k Members</p>
               </div>
             </div>
