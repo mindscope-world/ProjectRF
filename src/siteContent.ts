@@ -55,25 +55,25 @@ export interface SiteContent {
 // Pydantic defaults so there's no flash of different content once the real
 // fetch lands.
 export const DEFAULT_SITE_CONTENT: SiteContent = {
-  logo: { imageUrl: null, brandName: 'Brimline' },
+  logo: { imageUrl: null, brandName: 'Rapidfinil' },
   hero: {
     headline: '3 Day Delivery',
-    badgeText: "World's Best Headwear Store",
+    badgeText: 'Buy Modafinil USA 3 Day Delivery',
     ctaLabel: 'Why Choose Us?',
     backgroundImageUrl: null,
   },
   announcement: {
-    usaText: '📢 Restock alert: wide-brim sun hats and pom-pom beanies are back in stock🎯',
-    euText: '📣 First order? Use code WELCOME15 for 15% off — new bucket hat colorways landing this month📣',
+    usaText: '📢 Daily Rapid Shipping — Save Flat 25% on your first order!🎯',
+    euText: '📣 Bitcoin 5% instant discount at checkout — Daily Rapid Shipping on every order📣',
   },
   footer: {
-    copyrightText: '© 2025 Brimline',
-    supportEmail: 'support@brimline.example',
-    facebookUrl: 'https://facebook.com/brimline',
-    twitterUrl: 'https://twitter.com/brimline',
-    instagramUrl: 'https://instagram.com/brimline',
-    linkedinUrl: 'https://linkedin.com/brimline',
-    youtubeUrl: 'https://youtube.com/brimline',
+    copyrightText: '© 2025 RapidFinil',
+    supportEmail: 'support@rapidfinil.st',
+    facebookUrl: 'https://www.facebook.com/rapidfinil/',
+    twitterUrl: 'https://twitter.com/RapidFinil_SE',
+    instagramUrl: 'https://www.instagram.com/rapidfinil_se/',
+    linkedinUrl: 'https://www.linkedin.com/in/rapidfinil/',
+    youtubeUrl: 'https://vimeo.com/user222616820',
   },
   offerZone: {
     title: 'Exclusive Offer Zone',
@@ -89,7 +89,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       {
         title: 'Bulk Order Bonus',
         description: 'Use this coupon code for orders over $300 to receive a free bonus item in your pack.',
-        couponCode: 'BRIM10',
+        couponCode: 'BULK10',
       },
     ],
   },

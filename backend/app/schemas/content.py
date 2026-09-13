@@ -9,29 +9,29 @@ from pydantic import BaseModel, Field
 
 class LogoContent(BaseModel):
     imageUrl: str | None = None
-    brandName: str = "Brimline"
+    brandName: str = "Rapidfinil"
 
 
 class HeroContent(BaseModel):
     headline: str = "3 Day Delivery"
-    badgeText: str = "World's Best Headwear Store"
+    badgeText: str = "Buy Modafinil USA 3 Day Delivery"
     ctaLabel: str = "Why Choose Us?"
     backgroundImageUrl: str | None = None
 
 
 class AnnouncementContent(BaseModel):
-    usaText: str = "📢 Restock alert: wide-brim sun hats and pom-pom beanies are back in stock🎯"
-    euText: str = "📣 First order? Use code WELCOME15 for 15% off — new bucket hat colorways landing this month📣"
+    usaText: str = "📢 Daily Rapid Shipping — Save Flat 25% on your first order!🎯"
+    euText: str = "📣 Bitcoin 5% instant discount at checkout — Daily Rapid Shipping on every order📣"
 
 
 class FooterContent(BaseModel):
-    copyrightText: str = "© 2025 Brimline"
-    supportEmail: str = "support@brimline.example"
-    facebookUrl: str = "https://facebook.com/brimline"
-    twitterUrl: str = "https://twitter.com/brimline"
-    instagramUrl: str = "https://instagram.com/brimline"
-    linkedinUrl: str = "https://linkedin.com/brimline"
-    youtubeUrl: str = "https://youtube.com/brimline"
+    copyrightText: str = "© 2025 RapidFinil"
+    supportEmail: str = "support@rapidfinil.st"
+    facebookUrl: str = "https://www.facebook.com/rapidfinil/"
+    twitterUrl: str = "https://twitter.com/RapidFinil_SE"
+    instagramUrl: str = "https://www.instagram.com/rapidfinil_se/"
+    linkedinUrl: str = "https://www.linkedin.com/in/rapidfinil/"
+    youtubeUrl: str = "https://vimeo.com/user222616820"
 
 
 class OfferZoneOffer(BaseModel):
@@ -57,7 +57,7 @@ class OfferZoneContent(BaseModel):
                 description=(
                     "Use this coupon code for orders over $300 to receive a free bonus item in your pack."
                 ),
-                couponCode="BRIM10",
+                couponCode="BULK10",
             ),
         ]
     )

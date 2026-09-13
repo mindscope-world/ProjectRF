@@ -108,7 +108,7 @@ export const CustomerTestimonials: React.FC = () => {
 
           {/* Text bubble caption overlay matching screenshot 5 */}
           <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 w-44 bg-white/90 text-gray-900 text-[10px] font-bold py-1 px-2.5 rounded shadow text-center select-none backdrop-blur-xs">
-            if you&apos;ve been looking for quality headwear
+            if you&apos;ve been looking for reliable delivery
           </div>
 
           {/* Top Bar with Options */}

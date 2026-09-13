@@ -20,16 +20,18 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ className = '', height = 5
       {logoSrc ? (
         <img src={logoSrc} alt={logo.brandName} className="object-contain shrink-0" style={{ height }} />
       ) : (
-        <span
-          className="flex items-center justify-center rounded-full bg-gray-950 text-[#fed000] font-black shrink-0"
-          style={{ height, width: height, fontSize: typeof height === 'number' ? height * 0.5 : '1.5rem' }}
-        >
-          {logo.brandName.charAt(0).toUpperCase()}
-        </span>
+        <>
+          <span
+            className="flex items-center justify-center rounded-full bg-gray-950 text-[#fed000] font-black shrink-0"
+            style={{ height, width: height, fontSize: typeof height === 'number' ? height * 0.5 : '1.5rem' }}
+          >
+            {logo.brandName.charAt(0).toUpperCase()}
+          </span>
+          <span className="font-black text-gray-950 tracking-tight" style={{ fontSize: typeof height === 'number' ? height * 0.42 : '1.25rem' }}>
+            {logo.brandName}
+          </span>
+        </>
       )}
-      <span className="font-black text-gray-950 tracking-tight" style={{ fontSize: typeof height === 'number' ? height * 0.42 : '1.25rem' }}>
-        {logo.brandName}
-      </span>
     </div>
   );
 };

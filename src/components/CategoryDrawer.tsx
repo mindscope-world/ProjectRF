@@ -79,10 +79,10 @@ export const CategoryDrawer: React.FC<CategoryDrawerProps> = ({
           <p className="text-xs font-bold text-gray-800">Need Custom Orders?</p>
           <p className="text-[11px] text-gray-500 mt-0.5">Email us for custom quantities or embroidery</p>
           <a
-            href="mailto:support@brimline.example"
+            href="mailto:support@rapidfinil.st"
             className="inline-block mt-2 text-xs font-bold text-[#0066cc] hover:underline"
           >
-            support@brimline.example
+            support@rapidfinil.st
           </a>
         </div>
       </div>

@@ -24,13 +24,13 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
       case 'Contact Us':
         setModalContent({
           title: 'Contact Us',
-          body: 'For fast EU support, please contact our European fulfillment desk at support@brimline-eu.example. Our support desk operates 24/7 with average response times under 8 hours.',
+          body: 'For fast EU support, please contact our European fulfillment desk at support@rapidfinil.st. Our support desk operates 24/7 with average response times under 8 hours.',
         });
         break;
       case 'Community Give-Back':
         setModalContent({
           title: 'Community Give-Back Program',
-          body: 'Brimline Europe donates a portion of every bulk order to local youth sports leagues, helping supply teams with practice gear and uniforms.',
+          body: 'Rapidfinil Europe donates a portion of every bulk order to community health initiatives.',
         });
         break;
       case 'Facebook':
@@ -50,7 +50,7 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
       case 'Smartcustomer.com':
         setModalContent({
           title: `Verified Reviews on ${name}`,
-          body: `Brimline Europe holds an average rating of 4.9/5 stars on ${name} with thousands of verified EU delivery testimonials.`,
+          body: `Rapidfinil Europe holds an average rating of 4.9/5 stars on ${name} with thousands of verified EU delivery testimonials.`,
         });
         break;
       default:
@@ -174,7 +174,7 @@ export const EuFooter: React.FC<{ onNavSelect?: (nav: string) => void }> = ({
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left: Copyright */}
           <div className="text-sm text-[#8e8e8e]">
-            &copy; 2025 Brimline Europe
+            &copy; 2025 Rapidfinil Europe
           </div>
 
           {/* Right: Payment Icons + Scroll-To-Top Button */}

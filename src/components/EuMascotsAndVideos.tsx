@@ -113,7 +113,7 @@ export const EuMascotsAndVideos: React.FC = () => {
         <div
           onClick={() => {
             setActiveVideo({
-              title: 'Brimline Europe Fast Delivery Review',
+              title: 'Rapidfinil Europe Fast Delivery Review',
               person: 'Sarah (Verified Customer, Spain)',
               caption: 'Everything arrived in 3 days, securely packaged.',
               duration: '00:59',
@@ -163,9 +163,9 @@ export const EuMascotsAndVideos: React.FC = () => {
         <div
           onClick={() => {
             setActiveVideo({
-              title: 'If You Have Been Looking for Quality Headwear in Europe',
+              title: 'If You Have Been Looking for Fast Delivery in Europe',
               person: 'Elena (Verified Customer, Germany)',
-              caption: 'if you’ve been looking for quality headwear',
+              caption: 'if you’ve been looking for reliable delivery',
               duration: '01:02',
               image: '/src/assets/images/video_review_woman_two_1788885295167.jpg',
             });
@@ -187,7 +187,7 @@ export const EuMascotsAndVideos: React.FC = () => {
           {/* Text Overlay: "if you've been looking for quality headwear" (Matching Image 4) */}
           <div className="absolute top-1/4 inset-x-6 flex justify-center pointer-events-none">
             <span className="bg-black/75 text-white font-bold text-sm sm:text-base px-4 py-1.5 rounded-lg shadow-lg border border-white/20">
-              if you&apos;ve been looking for quality headwear
+              if you&apos;ve been looking for reliable delivery
             </span>
           </div>
 

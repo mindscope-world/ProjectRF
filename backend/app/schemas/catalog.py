@@ -23,6 +23,7 @@ class ProductOut(BaseModel):
     id: str  # product slug, not the internal UUID
     name: str
     category: str  # 'bestseller' | 'other'
+    categorySlug: str | None = None
     priceRange: str
     rating: float
     ratingCount: int | None = None

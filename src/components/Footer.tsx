@@ -54,7 +54,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
       case 'Community Give-Back':
         setModalContent({
           title: 'Community Give-Back Program',
-          body: 'Brimline donates a portion of every bulk order to local youth sports leagues, helping supply teams with practice gear and uniforms.',
+          body: 'Rapidfinil donates a portion of every bulk order to community health initiatives.',
         });
         break;
       case 'Security':
@@ -66,13 +66,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
       case 'FAQs':
         setModalContent({
           title: 'Frequently Asked Questions',
-          body: '• Delivery Time: 3 business days via domestic carrier.\n• Packaging: Secure padded mailers on every order.\n• Bitcoin Discount: Automatic 5% discount applied at checkout.\n• Bulk Quotes: For custom quantities or embroidery, email us directly.',
+          body: '• Delivery Time: 3 business days via domestic carrier.\n• Packaging: Secure padded mailers on every order.\n• Bitcoin Discount: Automatic 5% discount applied at checkout.\n• Bulk Quotes: For custom quantities, email us directly.',
         });
         break;
       case 'Become an Affiliate':
         setModalContent({
           title: 'Affiliate Partnership Program',
-          body: 'Join the Brimline affiliate program to earn competitive commissions on every referred customer. Contact affiliates@brimline.example to apply.',
+          body: 'Join the Rapidfinil affiliate program to earn competitive commissions on every referred customer. Contact affiliates@rapidfinil.st to apply.',
         });
         break;
       default:

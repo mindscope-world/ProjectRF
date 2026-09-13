@@ -142,23 +142,24 @@ export default function App() {
         return true;
       }
 
-      const text = `${p.name} ${p.description || ''}`.toLowerCase();
-
       switch (selectedCategory) {
-        case 'Bucket Hats':
-          return text.includes('bucket hat');
+        case 'ADHD':
+          return p.categorySlug === 'adhd';
 
-        case 'Baseball Caps':
-          return text.includes('cap') && !text.includes('bucket');
+        case 'Anxiety meds':
+          return p.categorySlug === 'anxiety-meds';
 
-        case 'Beanies':
-          return text.includes('beanie');
+        case 'Erectile dysfunction':
+          return p.categorySlug === 'erectile-dysfunction';
 
-        case 'Sun Hats':
-          return text.includes('sun hat');
+        case 'Insomnia':
+          return p.categorySlug === 'insomnia';
 
-        case 'Berets':
-          return text.includes('beret');
+        case 'Pain Meds':
+          return p.categorySlug === 'pain-meds';
+
+        case 'Weight Loss':
+          return p.categorySlug === 'weight-loss';
 
         case 'Best Sellers':
           return p.category === 'bestseller';

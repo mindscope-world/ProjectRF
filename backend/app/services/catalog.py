@@ -49,6 +49,7 @@ def serialize_product(product: Product) -> ProductOut:
         id=product.slug,
         name=product.name,
         category="bestseller" if product.is_best_seller else "other",
+        categorySlug=product.category.slug if product.category else None,
         priceRange=price_range,
         rating=float(product.rating),
         ratingCount=product.rating_count,
@@ -79,7 +80,7 @@ async def list_products(
     stmt = (
         select(Product)
         .where(Product.region == region, Product.status == ProductStatus.active)
-        .options(selectinload(Product.variants), selectinload(Product.images))
+        .options(selectinload(Product.variants), selectinload(Product.images), selectinload(Product.category))
         .order_by(Product.created_at)
     )
     result = await db.execute(stmt)
@@ -100,7 +101,7 @@ async def get_product_by_slug(db: AsyncSession, slug: str) -> ProductOut | None:
     stmt = (
         select(Product)
         .where(Product.slug == slug, Product.status == ProductStatus.active)
-        .options(selectinload(Product.variants), selectinload(Product.images))
+        .options(selectinload(Product.variants), selectinload(Product.images), selectinload(Product.category))
     )
     result = await db.execute(stmt)
     product = result.scalar_one_or_none()

@@ -13,6 +13,7 @@ export interface Product {
   id: string;
   name: string;
   category: 'bestseller' | 'other';
+  categorySlug?: string | null;
   priceRange: string;
   rating: number; // 0 to 5
   ratingCount?: number;
