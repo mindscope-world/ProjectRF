@@ -215,10 +215,13 @@ async def create_product_admin(db: AsyncSession, actor: str, payload: AdminProdu
     if payload.imageKey:
         db.add(ProductImage(product_id=product.id, storage_key=payload.imageKey, is_primary=True))
 
+    used_skus: set[str] = set()
     for variant_in in payload.variants:
+        sku = _unique_sku(payload.slug, variant_in.quantity, used_skus)
+        used_skus.add(sku)
         variant = ProductVariant(
             product_id=product.id,
-            sku=f"{payload.slug.upper()}-{variant_in.quantity}",
+            sku=sku,
             quantity=variant_in.quantity,
             label=variant_in.label,
             price=variant_in.price,
