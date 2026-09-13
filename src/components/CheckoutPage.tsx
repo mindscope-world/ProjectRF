@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { CheckCircle2, ChevronDown, Copy } from 'lucide-react';
 import { CartItem } from '../types';
 import { COUNTRIES } from '../constants/countries';
@@ -88,7 +89,31 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
     amount: number;
     currency: string;
   } | null>(null);
+  const [addressQrDataUrl, setAddressQrDataUrl] = useState<string | null>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+
+  // Encodes the address as a standard BIP21 URI (`bitcoin:<address>`) so
+  // scanning wallets recognize it as a Bitcoin payment rather than plain
+  // text. No amount param — we only know the fiat total here, not a BTC
+  // amount, so the customer still enters that side manually as the copy
+  // above already asks them to.
+  useEffect(() => {
+    if (!manualCryptoPayment) {
+      setAddressQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(`bitcoin:${manualCryptoPayment.address}`, { width: 220, margin: 1 })
+      .then((url) => {
+        if (!cancelled) setAddressQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setAddressQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [manualCryptoPayment]);
 
   const currency = items[0]?.currency || '$';
   const subtotal = items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
@@ -228,6 +253,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
           </span>{' '}
           worth of BTC to the address below — your order confirms automatically once the payment is detected.
         </p>
+        {addressQrDataUrl && (
+          <img
+            src={addressQrDataUrl}
+            alt="Scan to pay with a Bitcoin wallet"
+            width={220}
+            height={220}
+            className="mx-auto mb-4 rounded border border-gray-200"
+          />
+        )}
         <div className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded font-mono text-sm text-gray-900 break-all mb-2">
           {manualCryptoPayment.address}
           <button
