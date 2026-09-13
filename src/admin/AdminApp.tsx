@@ -43,7 +43,7 @@ const TokenGate: React.FC<{ onVerified: () => void }> = ({ onVerified }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-sm bg-white rounded-lg shadow-2xl p-6">
-        <h1 className="text-lg font-black text-gray-900 mb-1">Brimline Admin</h1>
+        <h1 className="text-lg font-black text-gray-900 mb-1">Rapidfinil Admin</h1>
         <p className="text-xs text-gray-500 mb-4">
           Enter the admin token (<code className="font-mono">ADMIN_API_KEY</code>) configured in
           backend/.env.
@@ -101,7 +101,7 @@ export default function AdminApp() {
       <aside className="w-56 shrink-0 bg-gray-950 text-white flex flex-col">
         <div className="px-4 py-5 border-b border-gray-800">
           <span className="font-black text-lg">
-            <span className="text-[#fed000]">Brimline</span> Admin
+            <span className="text-[#fed000]">Rapidfinil</span> Admin
           </span>
         </div>
         <nav className="flex-1 py-3">
