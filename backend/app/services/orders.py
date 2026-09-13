@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.integrations.payments.base import PaymentProvider
-from app.integrations.payments.btcpay import BTCPayProvider
+from app.integrations.payments.blockonomics import BlockonomicsProvider
 from app.integrations.payments.fake import FakePaymentProvider
 from app.models.cart import CartItem
 from app.models.catalog import Inventory, ProductStatus, ProductVariant
@@ -28,25 +28,26 @@ from app.services.cart import get_or_create_cart
 
 def get_payment_provider(payment_method: str) -> tuple[PaymentProvider, str]:
     """Provider selection lives here, not at import time, so tests/dev/CI
-    without BTCPay credentials configured transparently fall back to the
-    fake provider — see backend/README.md.
+    without a Blockonomics API key configured transparently fall back to
+    the fake provider — see backend/README.md.
 
-    Both payment methods route to BTCPay once it's configured: `crypto`
-    customers pay the invoice directly with their own wallet (redirected to
-    BTCPay's hosted checkout_url); `card_link` customers are meant to reach
-    the same invoice's on-chain address through a card-to-BTC on-ramp widget
-    (Ramp Network) instead — see PaymentOut.checkoutMode and
-    backend/README.md's "Card-to-Bitcoin via Ramp Network" section. Either
-    way, funds land in the same self-custodied, watch-only wallet; only the
-    customer-facing payment rail differs.
+    Both payment methods route to Blockonomics once it's configured:
+    `crypto` customers pay a freshly-derived receive address directly with
+    their own wallet (shown as-is — Blockonomics has no hosted checkout
+    page); `card_link` customers are meant to reach the same address
+    through a card-to-BTC on-ramp widget (Ramp Network) instead — see
+    PaymentOut.checkoutMode and backend/README.md's "Card-to-Bitcoin via
+    Ramp Network" section. Either way, funds land in the same
+    self-custodied, watch-only wallet; only the customer-facing payment
+    rail differs.
 
     Returns (provider, provider_name) — the name is what gets stored on
     `payments.provider` and is how later code (capture/refund/webhook
     lookup) tells fake and real payments apart without an isinstance check.
     """
     settings = get_settings()
-    if settings.btcpay_base_url and settings.btcpay_store_id and settings.btcpay_api_key:
-        return BTCPayProvider(), "btcpay"
+    if settings.blockonomics_api_key:
+        return BlockonomicsProvider(), "blockonomics"
     return FakePaymentProvider(), "fake"
 
 
@@ -57,22 +58,23 @@ def get_provider_by_name(provider_name: str) -> PaymentProvider:
 
     Deliberately keyed off the `payments.provider` column already stored on
     the row, not re-derived from get_payment_provider(payment_method) +
-    current settings: if BTCPay gets configured (or its credentials change)
-    after a `fake` payment already exists, re-deriving would silently swap
-    in BTCPayProvider for a payment BTCPay never created, and capture/refund
-    would call it with a provider_payment_id that isn't a valid BTCPay
-    invoice id. This bit in practice while testing the Phase 10 admin
-    refund endpoint against payments created before BTCPay was configured.
+    current settings: if Blockonomics gets configured (or its API key
+    changes) after a `fake` payment already exists, re-deriving would
+    silently swap in BlockonomicsProvider for a payment it never created,
+    and capture/refund would call it with a provider_payment_id that isn't
+    a valid Blockonomics address. This bit in practice while testing the
+    Phase 10 admin refund endpoint against payments created before BTCPay
+    (the previous provider) was configured.
     """
-    if provider_name == "btcpay":
-        return BTCPayProvider()
+    if provider_name == "blockonomics":
+        return BlockonomicsProvider()
     return FakePaymentProvider()
 
 
-def _checkout_mode(provider_name: str, payment_method: str) -> Literal["none", "btcpay", "ramp"]:
-    if provider_name != "btcpay":
+def _checkout_mode(provider_name: str, payment_method: str) -> Literal["none", "blockonomics", "ramp"]:
+    if provider_name != "blockonomics":
         return "none"
-    return "btcpay" if payment_method == "crypto" else "ramp"
+    return "blockonomics" if payment_method == "crypto" else "ramp"
 
 
 # Flat-rate shipping + a combined tax/payment-processing-fee percentage —
@@ -370,7 +372,7 @@ async def capture_payment(
                 "code": "PROVIDER_SETTLES_VIA_WEBHOOK",
                 "message": (
                     f"'{payment.provider}' payments settle automatically via webhook, not manual "
-                    "capture — see POST /webhooks/payments/btcpay."
+                    "capture — see GET /webhooks/payments/blockonomics."
                 ),
             },
         )
@@ -451,29 +453,24 @@ async def handle_payment_webhook_event(
         if payment is not None:
             event.payment_id = payment.id
 
-            # Only act on events that actually change something — e.g. an
-            # InvoiceSettled arriving after we already fulfilled on an
-            # earlier InvoiceProcessing is purely informational at that
-            # point (see workplan.md Phase 8: fulfillment doesn't wait on
-            # full confirmation), so it's recorded but not re-applied.
+            # Only act on events that actually change something — e.g. a
+            # later, higher-confirmation callback for an address we already
+            # fulfilled on is purely informational at that point (see
+            # workplan.md Phase 8: fulfillment doesn't wait on full
+            # confirmation), so it's recorded but not re-applied.
             if payment.status == PaymentStatus.created:
                 order = payment.order
                 inventories = await _load_inventories_for_items(db, order.items)
 
-                if event_type in ("InvoiceProcessing", "InvoiceReceivedPayment", "InvoiceSettled"):
+                if event_type == "payment.received":
                     # Fulfill on first sight of payment (even unconfirmed) —
                     # do not hold the order hostage to block confirmations.
+                    # A bare Blockonomics address has no expiry/invalid
+                    # states the way a BTCPay invoice did, so those branches
+                    # have no equivalent here.
                     payment.status = PaymentStatus.captured
                     order.status = OrderStatus.processing
                     _consume_reservation(order, inventories)
-                elif event_type == "InvoiceExpired":
-                    payment.status = PaymentStatus.expired
-                    order.status = OrderStatus.cancelled
-                    _release_reservation(order, inventories)
-                elif event_type == "InvoiceInvalid":
-                    payment.status = PaymentStatus.failed
-                    order.status = OrderStatus.cancelled
-                    _release_reservation(order, inventories)
 
     event.processed = True
     event.processed_at = datetime.now(UTC)

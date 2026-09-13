@@ -21,9 +21,9 @@ async def capture_payment(
 ) -> OrderWithPaymentOut:
     """Manual capture for the fake/manual (card_link, unconfigured) provider only.
 
-    Real crypto payments (provider="btcpay") settle via
-    POST /webhooks/payments/btcpay instead — this endpoint rejects those
-    with 400 PROVIDER_SETTLES_VIA_WEBHOOK.
+    Real crypto payments (provider="blockonomics") settle via
+    GET /webhooks/payments/blockonomics instead — this endpoint rejects
+    those with 400 PROVIDER_SETTLES_VIA_WEBHOOK.
     """
     parsed_id = parse_uuid(payment_id, "payment_id")
     return await order_service.capture_payment(db, session_id, parsed_id, payload.outcome)

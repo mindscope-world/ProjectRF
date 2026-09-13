@@ -15,28 +15,24 @@ class Settings(BaseSettings):
     # (3000, 3001, 3002, ...) always works without reconfiguring this.
     cors_allow_origin_regex: str = r"^http://localhost:\d+$"
 
-    # BTCPay Server — the real crypto payment provider for Phase 7/8 (see
-    # app/integrations/payments/btcpay.py and backend/README.md's "BTCPay
-    # Server setup" section). Left blank by default: with no store/API key
-    # configured, get_payment_provider() falls back to FakePaymentProvider
-    # for the crypto payment method too, so local dev and CI don't need a
-    # live BTCPay instance. Point btcpay_base_url at a testnet store first;
-    # for the mainnet cutover see docs/btcpay-mainnet-runbook.md. When
-    # app_env == "production", BTCPayProvider hard-fails a checkout if the
-    # instance is still on regtest/testnet (a bcrt1.../tb1... address).
-    btcpay_base_url: str = ""
-    btcpay_store_id: str = ""
-    btcpay_api_key: str = ""
-    btcpay_webhook_secret: str = ""
-
-    # The customer-facing origin for BTCPay checkout links, when it differs
-    # from btcpay_base_url — e.g. in local/regtest dev, the backend reaches
-    # BTCPay over the Docker network at http://btcpayserver:49392 (a
-    # hostname the customer's browser can't resolve), while the browser
-    # needs the host-mapped http://localhost:23000 instead. In a real
-    # deployment where BTCPay's public URL and the URL the backend calls are
-    # the same, leave this blank and btcpay_base_url is used for both.
-    btcpay_public_url: str = ""
+    # Blockonomics — the real crypto payment provider (see
+    # app/integrations/payments/blockonomics.py). Left blank by default:
+    # with no API key configured, get_payment_provider() falls back to
+    # FakePaymentProvider for the crypto payment method too, so local dev
+    # and CI don't need a live Blockonomics account.
+    #
+    # blockonomics_api_key: Bearer token from Merchants → API on the
+    # Blockonomics dashboard.
+    #
+    # blockonomics_callback_secret: a secret you choose yourself and paste
+    # into BOTH places — here, and the "Secret" field on the Blockonomics
+    # store's callback URL config (Stores → your store → callback URL:
+    # https://<this-backend>/api/v1/webhooks/payments/blockonomics). It's
+    # sent back on every callback as the `secret` query param so we can
+    # verify the request actually came from Blockonomics before trusting it
+    # — see BlockonomicsProvider.verify_webhook.
+    blockonomics_api_key: str = ""
+    blockonomics_callback_secret: str = ""
 
     # Phase 10 admin panel: a single shared-secret gate on /admin/* rather
     # than full user accounts/RBAC (Phase 2 auth was never built — see

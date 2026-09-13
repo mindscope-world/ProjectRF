@@ -56,7 +56,7 @@ GET    /api/v1/orders
 GET    /api/v1/orders/{order_id}
 POST   /api/v1/orders/{order_id}/cancel
 
-POST   /api/v1/webhooks/payments/btcpay             (BTCPay Server calls this, not the frontend)
+GET    /api/v1/webhooks/payments/blockonomics       (Blockonomics calls this, not the frontend)
 
 GET    /api/v1/admin/products?region=&status=&search=&limit=&offset=
 GET    /api/v1/admin/products/{product_id}
@@ -115,21 +115,17 @@ POST /checkout/create-order
   → order created (status=awaiting_payment), inventory reserved
     (quantity_available -= qty, quantity_reserved += qty), cart cleared
 
-  Fake provider (no BTCPay configured):
+  Fake provider (no Blockonomics configured):
     POST /payments/{id}/capture {"outcome": "succeed"}
       → payment=captured, order=processing, reservation released
     POST /payments/{id}/capture {"outcome": "fail"}
       → payment=failed, order=cancelled, reservation fully released
 
-  BTCPay provider (configured): settles via webhook, not a client call —
-    InvoiceProcessing / InvoiceReceivedPayment / InvoiceSettled
+  Blockonomics provider (configured): settles via callback, not a client call —
+    a "payment.received" callback (any confirmation status: 0/1/2+)
       → payment=captured, order=processing, reservation released
-        (whichever event arrives *first* — see "Settlement is decoupled
+        (whichever delivery arrives *first* — see "Settlement is decoupled
         from fulfillment" below; we do not wait for full confirmation)
-    InvoiceExpired
-      → payment=expired, order=cancelled, reservation fully released
-    InvoiceInvalid
-      → payment=failed, order=cancelled, reservation fully released
 
 POST /payments/{id}/refund {"amount": ..., "reason": "..."}
   → creates a Refund row, payment=refunded|partially_refunded; full refund
@@ -141,12 +137,12 @@ POST /orders/{id}/cancel        (only while pending/awaiting_payment)
 ```
 
 `app/integrations/payments/fake.py`'s `FakePaymentProvider` and
-`app/integrations/payments/btcpay.py`'s `BTCPayProvider` both implement the same
+`app/integrations/payments/blockonomics.py`'s `BlockonomicsProvider` both implement the same
 `PaymentProvider` interface (`app/integrations/payments/base.py`) — checkout/order logic in
 `app/services/orders.py` never touches a concrete provider directly.
-`get_payment_provider()` picks BTCPay once `BTCPAY_BASE_URL`/`BTCPAY_STORE_ID`/`BTCPAY_API_KEY`
-are all set, and falls back to the fake provider otherwise — so local dev, CI, and this repo's
-tests never need real BTCPay credentials to exercise the checkout flow.
+`get_payment_provider()` picks Blockonomics once `BLOCKONOMICS_API_KEY` is set, and falls back to
+the fake provider otherwise — so local dev, CI, and this repo's tests never need a real
+Blockonomics account to exercise the checkout flow.
 
 `POST /checkout/create-order` accepts an `Idempotency-Key` header — retrying with the same key
 returns the original order instead of creating a duplicate (protects against a frozen UI + a
@@ -154,175 +150,132 @@ second click on "Pay"). Falls back to a server-generated key if the client doesn
 The same key is also what a webhook replay/duplicate delivery gets checked against on the
 *payment* side — see "Webhook idempotency" below.
 
-## Real payments: BTCPay Server + webhooks
+## Real payments: Blockonomics + callbacks
 
-Real payment settlement is Bitcoin-only, via a **self-hosted BTCPay Server instance you control**
-— not a custodial processor. Two customer-facing payment methods both end up funding the same
-BTCPay-derived, watch-only wallet:
+Real payment settlement is Bitcoin-only, via **Blockonomics** (https://www.blockonomics.co) — a
+non-custodial address-generation service, not a hosted checkout/invoice gateway. It never holds
+funds: each order gets a fresh receive address derived from a wallet *you* control (an XPUB you
+connect, watch-only), and Blockonomics just watches the chain and calls back when something
+arrives. Two customer-facing payment methods both end up funding the same watched wallet:
 
-- **Cryptocurrency** — the customer pays a BTCPay-hosted invoice directly from their own wallet.
+- **Cryptocurrency** — the customer sends BTC directly to the address the storefront shows them
+  (`CheckoutPage.tsx`'s `manualCryptoPayment` view — there's no hosted checkout page to redirect
+  to).
 - **Apple Pay / Amazon Pay / cash app / Zelle / Credit Card Payment Link** — once
   [Ramp Network](#card-to-bitcoin-via-ramp-network) is also configured, this becomes "pay by
-  card, merchant receives BTC" via Ramp's on-ramp widget, targeting the *same* invoice's address.
-  Until Ramp is configured, `checkoutMode` comes back `"none"` for this method and the app falls
-  back to the fake/manual flow (a human sends a payment link by email, same as before Phase 7).
+  card, merchant receives BTC" via Ramp's on-ramp widget, targeting the *same* address. Until
+  Ramp is configured, `checkoutMode` comes back `"none"` for this method and the app falls back
+  to the fake/manual flow (a human sends a payment link by email, same as before Phase 7).
 
-### BTCPay Server setup (one-time, done in BTCPay's own admin UI — not this app's code)
+### Blockonomics setup (one-time, done in Blockonomics' own dashboard — not this app's code)
 
 1. **Wallet**: in BlueWallet, open the wallet you want checkout funds to land in → **⋮ → Show
    Wallet XPUB** → copy the string. (Any wallet app that exports a standard XPUB/ZPUB works —
    BlueWallet is just the one with the clearest menu for it.) Consider a dedicated checkout
    sub-wallet, separate from a main treasury — a leaked XPUB only exposes address history, never
    funds (watch-only), but containment is still good hygiene.
-2. **Deploy BTCPay Server** — self-hosted (a VPS; full node sync takes 1–3 days) or a managed/
-   hosted instance to start faster. Start on **testnet** first (Store Settings → General →
-   Network) and only point production traffic at mainnet once a full webhook round-trip has been
-   verified end-to-end on testnet. For the regtest→mainnet cutover (the fix for customers getting
-   `bcrt1…` addresses that Binance / Trust Wallet reject), follow
-   [`docs/btcpay-mainnet-runbook.md`](../docs/btcpay-mainnet-runbook.md) — it has a ready
-   mainnet stack (`compose.btcpay-mainnet.yaml`), per-layer verification, and the customer
-   payment flows.
-3. **Connect the wallet**: Store Settings → Wallets → Bitcoin → *Connect an existing wallet* →
-   paste the XPUB/ZPUB → confirm script type (native SegWit is standard). This is the entire
-   "give BTCPay a wallet" step — the private key never leaves BlueWallet.
-4. **API key**: Account → Manage Account → API Keys → generate a Greenfield API key scoped to
-   the store, with invoice create/read (and refund, if refunds are needed) permissions.
-5. **Webhook**: Store Settings → Webhooks → add `https://<your-backend>/api/v1/webhooks/payments/btcpay`,
-   subscribe to at least `InvoiceProcessing`, `InvoiceReceivedPayment`, `InvoiceSettled`,
-   `InvoiceExpired`, `InvoiceInvalid` — copy the generated webhook secret.
-6. Set these in `backend/.env` (never commit real values — `backend/.env` is gitignored):
+2. **Add the wallet**: Blockonomics dashboard → Wallets → add a BTC wallet → paste the XPUB/ZPUB.
+3. **Create a store**: dashboard → Stores → new store → enable crypto → attach the wallet from
+   step 2 → set the callback URL to `https://<your-backend>/api/v1/webhooks/payments/blockonomics`
+   → set a **Secret** (any random string you choose — this is `BLOCKONOMICS_CALLBACK_SECRET`
+   below, not something Blockonomics generates for you).
+4. **API key**: dashboard → Merchants → API → copy the key (`BLOCKONOMICS_API_KEY` below).
+5. Set these in `backend/.env` (never commit real values — `backend/.env` is gitignored):
    ```
-   BTCPAY_BASE_URL=https://your-btcpay-instance.example
-   BTCPAY_STORE_ID=<store id from the store's URL/settings>
-   BTCPAY_API_KEY=<greenfield API key from step 4>
-   BTCPAY_WEBHOOK_SECRET=<webhook secret from step 5>
+   BLOCKONOMICS_API_KEY=<API key from step 4>
+   BLOCKONOMICS_CALLBACK_SECRET=<the same secret you set on the store's callback URL in step 3>
    ```
    Recreate the API container so it picks up the new env vars — a plain `docker compose restart
    api` does **not** reload `env_file`:
    ```
    docker compose up -d --force-recreate api worker
    ```
-   `get_payment_provider()` picks up BTCPay automatically once base URL / store id / API key are
-   all non-empty.
+   `get_payment_provider()` picks up Blockonomics automatically once the API key is non-empty.
 
-   If the origin the backend calls BTCPay on isn't reachable from the customer's browser (see the
-   regtest setup below, where the backend uses an internal Docker hostname), also set
-   `BTCPAY_PUBLIC_URL` to the origin the browser *can* reach — the checkout link's host gets
-   rewritten to it. Leave it blank when `BTCPAY_BASE_URL` is already public.
+### Testing without spending real Bitcoin
 
-### Local regtest BTCPay for dev/testing (no real Bitcoin, no VPS)
+Blockonomics has no separate regtest/testnet stack to run locally — instead, toggle **Testmode**
+on for the store (dashboard → Stores → your store → Payment method). Test-mode orders get a test
+address, and the dashboard's Log/Test Bench lets you "send" a chosen BTC amount to it, which fires
+the same callback shape at `BLOCKONOMICS_API_KEY`'s configured URL with a realistic status
+progression (unconfirmed → 1 confirmation → fully confirmed) — see
+https://developers.blockonomics.co/docs/guides/testing. **Never send real BTC to a test-mode
+address — it's not recoverable.** Turn Testmode back off before going live.
 
-`compose.btcpay-regtest.yaml` (repo root) runs a throwaway BTCPay Server + NBXplorer + bitcoind
-(regtest network) + its own Postgres as plain containers on the same `rapidfinil_default` network
-— no root access or system changes, unlike the official installer vendored in `btcpay-regtest/`
-(that one is for deploying a real production instance on a VPS).
-
-```
-docker compose -f compose.yaml -f compose.btcpay-regtest.yaml up -d
-```
-
-Then, one-time, in a browser at `http://localhost:23000`: register an admin account, create a
-store, generate a hot wallet (Settings → Wallets → Bitcoin → Generate a new wallet), create a
-Greenfield API key, and add a webhook with payload URL `http://api:8000/api/v1/webhooks/payments/btcpay`
-(the `api` container's address on the shared network). Put the resulting values in `backend/.env`:
+`app/scripts/replay_webhook.py` re-delivers a previously received callback (by
+`provider_event_id`, or the most recent one) to this app's own webhook endpoint, to verify
+duplicate deliveries are handled safely without needing a fresh Blockonomics callback each time:
 
 ```
-BTCPAY_BASE_URL=http://btcpayserver:49392
-BTCPAY_PUBLIC_URL=http://localhost:23000
-BTCPAY_STORE_ID=<from the store's settings page>
-BTCPAY_API_KEY=<from the API key you generated>
-BTCPAY_WEBHOOK_SECRET=<from the webhook you created>
+docker compose exec api python -m app.scripts.replay_webhook
 ```
-
-To pay a test invoice, send its BTC address regtest coins from bitcoind's built-in wallet, then
-mine a block to confirm it:
-
-```
-docker exec btcpay-regtest-bitcoind bitcoin-cli -regtest -rpcport=43782 -rpcconnect=127.0.0.1 \
-  -datadir=/data -rpcwallet=default sendtoaddress <invoice BTC address> <amount>
-docker exec btcpay-regtest-bitcoind bitcoin-cli -regtest -rpcport=43782 -rpcconnect=127.0.0.1 \
-  -datadir=/data generatetoaddress 1 $(docker exec btcpay-regtest-bitcoind bitcoin-cli \
-  -regtest -rpcport=43782 -rpcconnect=127.0.0.1 -datadir=/data -rpcwallet=default getnewaddress)
-```
-
-BTCPay delivers its webhook within a few seconds of the confirmation, and the order moves from
-`awaiting_payment` to `processing` with the payment marked `captured`.
-
-### Mainnet BTCPay (going live)
-
-A regtest instance derives `bcrt1…` addresses; testnet derives `tb1…`. Real wallets and
-exchanges reject both (`expected bc, got bcrt`). Only a **mainnet** node + NBXplorer + BTCPay
-produce spendable `bc1…` / `3…` / `1…` addresses. The full procedure — a mainnet
-`compose.btcpay-mainnet.yaml` stack (or the official installer in `btcpay-regtest/`),
-connecting a **watch-only** mainnet wallet from an xpub, per-layer verification, and the
-Binance / Trust Wallet payer flows — is in
-[`docs/btcpay-mainnet-runbook.md`](../docs/btcpay-mainnet-runbook.md).
-
-Guardrail: `BTCPayProvider.create_payment_session` checks the derived address's network. With
-`APP_ENV=production` a `bcrt1…` / `tb1…` address raises `BTCPayConfigurationError` and fails the
-checkout (whole transaction rolls back — no phantom order) rather than handing a real customer a
-dead address; outside production it's a logged warning, since regtest is the expected dev setup.
 
 ### Card-to-Bitcoin via Ramp Network
 
 For the card_link payment method to actually collect a card payment and still settle in BTC,
-add [Ramp Network](https://ramp.network) as an on-ramp widget pointed at the same BTCPay invoice
-address — BTCPay itself is unaware of Ramp; it just sees a payment arrive at a watched address.
+add [Ramp Network](https://ramp.network) as an on-ramp widget pointed at the same
+Blockonomics-derived address — Blockonomics itself is unaware of Ramp; it just sees a payment
+arrive at a watched address.
 
 1. Register on the Ramp developer dashboard, get a **host API key**. Staging/sandbox works
    without business verification; production (real card payments) requires KYB approval —
    budget a few days to a couple of weeks for that.
 2. Configure Ramp's own webhook (transaction status events) in their dashboard if you want a
-   second signal independent of BTCPay's — not required for this app to function, since BTCPay's
-   webhook is the one this backend actually acts on (see "Confirmation & fulfillment policy"
-   below for why BTCPay, not Ramp, is the authoritative signal).
+   second signal independent of Blockonomics' — not required for this app to function, since
+   Blockonomics' callback is the one this backend actually acts on (see "Confirmation &
+   fulfillment policy" below for why Blockonomics, not Ramp, is the authoritative signal).
 3. Set `VITE_RAMP_HOST_API_KEY` in the frontend's `.env` (repo root, not `backend/`).
 
-With both BTCPay and Ramp configured, `POST /checkout/create-order` for `paymentMethod:
-"card_link"` returns `payment.checkoutMode: "ramp"` plus `payment.cryptoAddress` — the invoice's
-on-chain address BTCPay derived from the XPUB — and `CheckoutPage.tsx` opens
+With both Blockonomics and Ramp configured, `POST /checkout/create-order` for `paymentMethod:
+"card_link"` returns `payment.checkoutMode: "ramp"` plus `payment.cryptoAddress` — the address
+Blockonomics derived from the XPUB — and `CheckoutPage.tsx` opens
 `https://app.ramp.network/?hostApiKey=...&swapAsset=BTC&userAddress=<cryptoAddress>&fiatValue=...`
-per Ramp's widget contract. If only BTCPay is configured (no Ramp key on the frontend), checkout
-falls back to showing the raw address for a manual wallet-to-wallet payment rather than pretending
-a card flow exists.
+per Ramp's widget contract. If only Blockonomics is configured (no Ramp key on the frontend),
+checkout falls back to showing the raw address for a manual wallet-to-wallet payment rather than
+pretending a card flow exists.
 
 **What's needed to make this "live"**, since none of it can be provisioned or tested from inside
-this repo: a deployed BTCPay Server instance, its store's API key and webhook secret, an XPUB
-exported from a wallet you control, and (for the card rail) a Ramp developer account and host API
-key. All of these are credentials/infrastructure only the store operator can supply — see the
+this repo: a Blockonomics account with its API key and a store callback secret, an XPUB exported
+from a wallet you control, and (for the card rail) a Ramp developer account and host API key. All
+of these are credentials/infrastructure only the store operator can supply — see the
 `backend/.env` and root `.env` variables above once you have them.
 
 ### Confirmation & fulfillment policy (settlement decoupled from fulfillment)
 
 `handle_payment_webhook_event` (`app/services/orders.py`) fulfills the order — captures the
-payment, reserves inventory into a firm sale — on the **first** `InvoiceProcessing` /
-`InvoiceReceivedPayment` / `InvoiceSettled` event it sees, whichever arrives first. It does **not**
-wait for full confirmations: an unconfirmed (0-conf) or single-confirmation payment is enough to
-ship a typical order. A later `InvoiceSettled` for an already-captured payment is recorded (for
-audit) but doesn't re-trigger anything — fulfillment already happened.
+payment, reserves inventory into a firm sale — on the **first** `payment.received` callback it
+sees for a known address, whichever confirmation status (0/1/2+) that happens to arrive at. It
+does **not** wait for full confirmations: an unconfirmed (0-conf) or single-confirmation payment
+is enough to ship a typical order. A later, higher-confirmation callback for an
+already-captured payment is recorded (for audit) but doesn't re-trigger anything — fulfillment
+already happened.
 
-This is a deliberate choice, not an oversight: BTCPay's own invoice "speed policy" (Store
-Settings → General) already encodes how many confirmations *it* considers the invoice settled at,
-and if your risk tolerance requires waiting for more confirmations before physically shipping a
-given order, configure that in BTCPay's speed policy rather than adding blocking logic here — the
-point of Phase 8 is that this backend's order-fulfillment path never blocks on chain confirmation
-by default; if you want stricter confirmation requirements for high-value orders, we recommend
-gating those manually (flag for review) rather than making the whole checkout path wait on-chain,
-since that would stall ordinary low-value orders unnecessarily.
+This is a deliberate choice, not an oversight, matching the same policy the previous BTCPay
+integration used — if your risk tolerance requires waiting for more confirmations before
+physically shipping a given order, we recommend gating those manually (flag for review) rather
+than making the whole checkout path wait on-chain, since that would stall ordinary low-value
+orders unnecessarily.
+
+**Known limitation**: a bare Blockonomics address has no fixed expected amount the way a hosted
+invoice does, and a callback's `value` is the amount of *that one transaction*, not a running
+balance — under/over-payment and split payments aren't reconciled here. Every callback for a
+known address is treated as "this order is paid." The raw `value` is still recorded on the
+`payment_events` row (`payload.value`, in satoshis) for manual reconciliation if that's ever
+needed.
 
 ### Webhook idempotency
 
-Every BTCPay webhook delivery is inserted into `payment_events` keyed by a unique
-`provider_event_id` (BTCPay's `deliveryId`, falling back to `invoiceId:type:timestamp` if that's
-ever missing) *before* being acted on. A duplicate delivery — providers retry on anything but a
-clean `2xx`, so this is expected, not a bug when it happens — fails to insert (unique constraint)
-and is treated as already-handled, not reprocessed. This is enforced at the database level (an
-`IntegrityError` on a racing concurrent insert), not a Python check-then-insert, so two
-simultaneous deliveries of the same event can't both slip through.
+Every Blockonomics callback is inserted into `payment_events` keyed by a unique
+`provider_event_id` (`{txid}:{status}:{addr}` — Blockonomics itself guarantees this combination
+is delivered at most once per payment/confirmation-stage) *before* being acted on. A duplicate
+delivery fails to insert (unique constraint) and is treated as already-handled, not reprocessed.
+This is enforced at the database level (an `IntegrityError` on a racing concurrent insert), not a
+Python check-then-insert, so two simultaneous deliveries of the same event can't both slip
+through.
 
-Signature verification (`BTCPayProvider.verify_webhook`) happens before any of this: BTCPay signs
-the raw request body as `BTCPay-Sig: sha256=<hmac>` using the per-webhook secret; a missing or
-invalid signature is rejected with `401` before the payload is even parsed as JSON.
+Signature verification (`BlockonomicsProvider.verify_webhook`) happens before any of this —
+Blockonomics callbacks carry no HMAC, just a shared `secret` query param configured once on the
+store's callback URL; a missing or wrong secret is rejected with `401`.
 
 ## Run locally without Docker
 
@@ -385,14 +338,15 @@ re-validation (distinct from cart's own check), idempotent replay on a repeated 
 and session-scoped order listing/detail.
 
 `tests/test_webhooks.py` and `tests/test_refunds.py` cover real-payment behavior using the
-`btcpay_configured` fixture (`tests/conftest.py`) — fake-but-valid-shaped BTCPay credentials plus
-an `httpx.MockTransport` standing in for BTCPay's Greenfield API, so these run with **no live
-BTCPay Server or network access required**: signature verification (missing/invalid → 401),
-success (`InvoiceReceivedPayment`), failure (`InvoiceInvalid`), expiry (`InvoiceExpired`),
-duplicate-delivery idempotency (checked at the `payment_events` row level, not just via side
-effects — the state guard alone would mask a dedup failure), a late `InvoiceSettled` after
-already-fulfilled being a no-op (Phase 8's decoupling), and refunds (fake provider, BTCPay
-provider, partial refund, rejecting an uncaptured payment, rejecting over-remaining-amount).
+`blockonomics_configured` fixture (`tests/conftest.py`) — fake-but-valid-shaped Blockonomics
+credentials plus an `httpx.MockTransport` standing in for Blockonomics' API, so these run with
+**no live Blockonomics account or network access required**: secret verification (missing/wrong →
+401/422), success (a `payment.received` callback), duplicate-delivery idempotency (checked at the
+`payment_events` row level, not just via side effects — the state guard alone would mask a dedup
+failure), a later higher-confirmation callback after already-fulfilled being a no-op (Phase 8's
+decoupling), and refunds (fake provider, Blockonomics provider — always
+`requires_manual_action` since it has no refund API, partial refund, rejecting an uncaptured
+payment, rejecting over-remaining-amount).
 
 **Event loop note**: `app/core/database.py`'s async engine/connection pool is a module-level
 singleton, created once at import time — its pooled connections are bound to whichever event
@@ -454,14 +408,12 @@ stack (see below).
   round-trip: 106 orders before backup, 106 after restore.
 
 - **Webhook replay testing** — `backend/app/scripts/replay_webhook.py` re-delivers a previously
-  received BTCPay event (by `provider_event_id`, or the most recent one) to this app's own webhook
-  endpoint, correctly re-signed, and checks that `payment_events` doesn't grow a duplicate row:
+  received Blockonomics callback (by `provider_event_id`, or the most recent one) to this app's
+  own webhook endpoint, with the correct callback secret, and checks that `payment_events` doesn't
+  grow a duplicate row:
   ```
   docker compose exec api python -m app.scripts.replay_webhook
   ```
-  **Actually run** against a real captured event from the regtest BTCPay flow above: replay
-  returned `200`, no duplicate row was created — the unique `provider_event_id` constraint plus
-  the `IntegrityError` catch in `handle_payment_webhook_event` works as designed.
 
 - **Not done**: access-control testing (no automated check that a customer session is refused at
   `/admin/*` — `require_admin`'s own gate is covered by `test_admin_requires_a_valid_token`, but
@@ -477,22 +429,21 @@ stack (see below).
   until Phase 2 (Auth). Guest carts/orders (by `session_id`) are the only kind that exist right now.
 - No `addresses` table yet either — with no logged-in user to own a saved address, checkout takes
   the shipping address inline and snapshots it straight onto the order as JSONB.
-- `BTCPayProvider.refund`'s exact Greenfield API request body has varied across BTCPay Server
-  versions — it's been exercised against a live BTCPay Server 2.4.4 instance (see the regtest
-  setup below) and works there, but re-verify against `/swagger` before relying on it against a
-  different version in production. A refund creates a BTCPay "pull payment" the customer claims —
-  there's no way to push funds automatically without the store operator holding a spending key,
-  which is exactly what this architecture avoids.
-- `BTCPayProvider.create_payment_session`'s on-chain-address lookup originally checked for fields
-  (`paymentMethod`, `cryptoCode`) that don't exist in BTCPay's actual response — confirmed against
-  a live instance the field is `paymentMethodId` (e.g. `"BTC-CHAIN"`). Fixed, but a reminder that
-  anything in this integration guessed from docs rather than a live server deserves the same
-  skepticism until it's actually been exercised.
+- `BlockonomicsProvider.refund` has no real API to call — Blockonomics exposes no refund
+  endpoint (it's non-custodial; funds land straight in the merchant's own wallet), so it just
+  returns a fixed `requires_manual_action` status and a human has to send the refund by hand from
+  the connected wallet.
+- `BlockonomicsProvider` doesn't verify amount paid against the order total (see "Known
+  limitation" under "Confirmation & fulfillment policy" above) — a genuine gap versus a hosted
+  invoice provider, worth tightening (store the expected BTC amount at checkout time, compare
+  against the callback's `value`) before relying on this for orders where under-payment risk
+  matters.
 - An order whose payment already captured can't be cancelled through `POST /orders/{id}/cancel`
   (`409 ORDER_NOT_CANCELLABLE`) — use `POST /payments/{id}/refund` instead.
-- No reconciliation job yet: webhooks are at-least-once, not guaranteed-once delivery. A production
-  deployment should add a periodic job cross-checking BTCPay's invoice list against local orders to
-  catch any webhook that never arrived (network blips happen) — not implemented here.
+- No reconciliation job yet: callbacks are at-least-once, not guaranteed-once delivery, and a
+  customer's wallet/exchange call could simply fail to send at all. A production deployment
+  should add a periodic job cross-checking Blockonomics' `/searchhistory` against local orders to
+  catch any callback that never arrived (network blips happen) — not implemented here.
 - CORS is wide open to any `http://localhost:<port>` origin (`app/core/config.py`'s
   `cors_allow_origin_regex`) so the Vite dev server's auto-picked port always works. Tighten this
   to explicit origins before production.

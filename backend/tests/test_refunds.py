@@ -1,16 +1,9 @@
-import hashlib
-import hmac
-import json
 import uuid
 
 import pytest
 
 from app.core.database import async_session_factory
 from app.models.payment import Payment
-
-
-def _sign(payload: bytes, secret: str = "test-webhook-secret") -> str:
-    return "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
 
 
 def _session_header() -> dict[str, str]:
@@ -154,7 +147,7 @@ async def test_partial_refund_leaves_payment_partially_refunded(client, sample_p
 
 
 @pytest.mark.asyncio
-async def test_refund_after_btcpay_capture(client, btcpay_configured, sample_product) -> None:
+async def test_refund_after_blockonomics_capture(client, blockonomics_configured, sample_product) -> None:
     headers = _session_header()
     await client.post(
         "/api/v1/cart/items", headers=headers, json={"variantId": sample_product["variant_id"], "quantity": 1}
@@ -169,21 +162,25 @@ async def test_refund_after_btcpay_capture(client, btcpay_configured, sample_pro
     total = order_resp.json()["order"]["totalAmount"]
 
     payment = await _get_payment_by_order_id(order_id)
-    event = json.dumps(
-        {
-            "deliveryId": f"del-{uuid.uuid4().hex}",
-            "type": "InvoiceReceivedPayment",
-            "invoiceId": payment.provider_payment_id,
-            "timestamp": 1,
-        }
-    ).encode()
-    await client.post("/api/v1/webhooks/payments/btcpay", content=event, headers={"BTCPay-Sig": _sign(event)})
+    await client.get(
+        "/api/v1/webhooks/payments/blockonomics",
+        params={
+            "secret": "test-callback-secret",
+            "addr": payment.provider_payment_id,
+            "txid": f"tx-{uuid.uuid4().hex}",
+            "status": 2,
+            "value": 100_000,
+        },
+    )
 
     refund_response = await client.post(
         f"/api/v1/payments/{payment_id}/refund", headers=headers, json={"amount": total}
     )
     assert refund_response.status_code == 201, refund_response.text
-    assert refund_response.json()["status"]  # BTCPay's mock returns "AwaitingPayment" for a pull payment
+    # Blockonomics has no refund API — a human sends it manually from the
+    # connected wallet, so the provider just returns a fixed "needs action"
+    # status rather than any real gateway-issued one.
+    assert refund_response.json()["status"] == "requires_manual_action"
 
     order_response = await client.get(f"/api/v1/orders/{order_id}", headers=headers)
     assert order_response.json()["status"] == "refunded"

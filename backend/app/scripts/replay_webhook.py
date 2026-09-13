@@ -1,18 +1,19 @@
 """Phase 11 hardening: webhook replay testing.
 
-Re-delivers a previously received BTCPay webhook event (by provider_event_id,
-or the most recent one if omitted) to this app's own webhook endpoint, to
-verify redelivery is handled safely:
+Re-delivers a previously received Blockonomics callback (by
+provider_event_id, or the most recent one if omitted) to this app's own
+webhook endpoint, to verify redelivery is handled safely:
 
   - a *duplicate* delivery of an event already processed must be a no-op
     (payment/order state doesn't change again, no second audit trail entry)
-  - the endpoint still requires a valid signature — this script signs with
-    the same BTCPAY_WEBHOOK_SECRET the app is configured with, since that's
-    the only way to produce a signature the endpoint will accept
+  - the endpoint still requires the correct `secret` query param — this
+    script signs with the same BLOCKONOMICS_CALLBACK_SECRET the app is
+    configured with, since that's the only way to produce a request the
+    endpoint will accept
 
-This does not (and cannot) verify BTCPay's own retry behavior — only that
-*this app* is idempotent when the same delivery arrives twice, which is the
-actual risk webhook replay testing is for (see app/services/orders.py::
+This does not (and cannot) verify Blockonomics' own retry behavior — only
+that *this app* is idempotent when the same delivery arrives twice, which is
+the actual risk webhook replay testing is for (see app/services/orders.py::
 handle_payment_webhook_event and payment_events' unique provider_event_id
 constraint).
 
@@ -24,9 +25,6 @@ Run with:
 
 import argparse
 import asyncio
-import hashlib
-import hmac
-import json
 
 import httpx
 from sqlalchemy import select
@@ -54,29 +52,35 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider-event-id", default=None, help="Replay this specific event (default: most recent)")
     parser.add_argument(
-        "--url", default="http://localhost:8000/api/v1/webhooks/payments/btcpay", help="Webhook endpoint URL"
+        "--url",
+        default="http://localhost:8000/api/v1/webhooks/payments/blockonomics",
+        help="Webhook endpoint URL",
     )
     args = parser.parse_args()
 
     settings = get_settings()
-    if not settings.btcpay_webhook_secret:
-        raise SystemExit("BTCPAY_WEBHOOK_SECRET is not configured — nothing to sign the replay with.")
+    if not settings.blockonomics_callback_secret:
+        raise SystemExit("BLOCKONOMICS_CALLBACK_SECRET is not configured — nothing to authenticate the replay with.")
 
     event = await _load_event(args.provider_event_id)
     if event is None:
         raise SystemExit("No payment_events row found to replay. Run a real checkout first (see backend/README.md).")
 
-    body = json.dumps(event.payload).encode()
-    signature = "sha256=" + hmac.new(settings.btcpay_webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    params = {
+        "secret": settings.blockonomics_callback_secret,
+        "addr": event.payload["addr"],
+        "txid": event.payload["txid"],
+        "status": event.payload["status"],
+        "value": event.payload["value"],
+        "crypto": event.payload.get("crypto", "BTC"),
+    }
 
     before = await _count_events(event.provider_event_id)
     print(f"Replaying provider_event_id={event.provider_event_id!r} (event_type={event.event_type!r})")
     print(f"Rows for this provider_event_id before replay: {before}")
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            args.url, content=body, headers={"Content-Type": "application/json", "BTCPay-Sig": signature}
-        )
+        response = await client.get(args.url, params=params)
 
     print(f"Replay response: {response.status_code} {response.text}")
 
@@ -84,7 +88,7 @@ async def main() -> None:
     print(f"Rows for this provider_event_id after replay: {after}")
 
     if response.status_code != 200:
-        raise SystemExit("FAIL: replay was not accepted (bad signature or malformed payload).")
+        raise SystemExit("FAIL: replay was not accepted (bad secret or malformed payload).")
     if after != before:
         raise SystemExit(
             f"FAIL: replay created a duplicate payment_events row ({before} -> {after}) — "

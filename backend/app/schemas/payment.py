@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 class CapturePaymentIn(BaseModel):
     # Caller-supplied outcome stands in for a real provider's webhook
     # (Phase 7) — see app/integrations/payments/fake.py. Only valid for
-    # provider="fake" payments; BTCPay payments settle via webhook only.
+    # provider="fake" payments; Blockonomics payments settle via webhook
+    # only.
     outcome: Literal["succeed", "fail"] = "succeed"
 
 

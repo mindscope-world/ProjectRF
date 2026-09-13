@@ -42,13 +42,15 @@ class Payment(Base):
     provider: Mapped[str] = mapped_column(String, nullable=False)
     provider_payment_id: Mapped[str | None] = mapped_column(String, nullable=True)
     payment_method: Mapped[str] = mapped_column(String, nullable=False)
-    # Provider-hosted checkout page (BTCPay). Persisted, not just returned
-    # once, so an idempotent checkout replay (customer reloads before paying)
+    # Provider-hosted checkout page. Always null for Blockonomics (it has
+    # none — see crypto_address below); persisted rather than just returned
+    # once so an idempotent checkout replay (customer reloads before paying)
     # can still hand back the same link instead of a dead end.
     checkout_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    # On-chain address BTCPay derived for this invoice — needed by a
-    # card->BTC on-ramp widget (Ramp Network). Same persistence reasoning as
-    # checkout_url above.
+    # On-chain receive address Blockonomics derived for this order. Shown
+    # directly to the customer (no checkout_url exists to redirect to) and
+    # also usable by a card->BTC on-ramp widget (Ramp Network). Same
+    # persistence reasoning as checkout_url above.
     crypto_address: Mapped[str | None] = mapped_column(String, nullable=True)
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)

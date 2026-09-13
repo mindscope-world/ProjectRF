@@ -25,9 +25,10 @@ class Refund(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_refund_id: Mapped[str | None] = mapped_column(String, nullable=True)
     # Free-text status straight from the provider (e.g. "succeeded",
-    # "AwaitingPayment" for a BTCPay pull payment awaiting customer claim) —
-    # not an enum, since providers use very different vocabularies here and
-    # this is a passthrough/audit field, not something our own state machine
+    # "requires_manual_action" for Blockonomics, which has no refund API
+    # and needs a human to send it from the connected wallet) — not an
+    # enum, since providers use very different vocabularies here and this
+    # is a passthrough/audit field, not something our own state machine
     # branches on.
     status: Mapped[str] = mapped_column(String, nullable=False)
 

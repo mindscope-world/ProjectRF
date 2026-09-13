@@ -41,7 +41,7 @@ export const CheckoutsSection: React.FC = () => {
       <div className="flex flex-wrap gap-2 mb-4">
         <select value={provider} onChange={(e) => setProvider(e.target.value)} className="text-sm border border-gray-300 rounded px-2 py-1.5">
           <option value="">All providers</option>
-          <option value="btcpay">btcpay</option>
+          <option value="blockonomics">blockonomics</option>
           <option value="fake">fake</option>
         </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="text-sm border border-gray-300 rounded px-2 py-1.5">

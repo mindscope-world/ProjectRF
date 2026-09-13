@@ -11,11 +11,11 @@ class PaymentSessionResult:
     # Where the customer completes payment (a hosted checkout page). None for
     # providers with no separate checkout page (e.g. the fake provider).
     checkout_url: str | None = None
-    # The raw on-chain receive address BTCPay derived from the store's
-    # watch-only XPUB for this invoice. Needed to open a card->BTC on-ramp
-    # widget (Ramp Network) pointed at the same invoice instead of sending
-    # the customer to BTCPay's own hosted checkout page — see
-    # backend/README.md's "Card-to-Bitcoin via Ramp Network" section.
+    # The raw on-chain receive address (Blockonomics derives this from the
+    # store's connected watch-only wallet). Shown directly to the customer
+    # when there's no checkout_url, and also usable to open a card->BTC
+    # on-ramp widget (Ramp Network) pointed at the same address instead —
+    # see backend/README.md's "Card-to-Bitcoin via Ramp Network" section.
     crypto_address: str | None = None
 
 
@@ -37,9 +37,9 @@ class PaymentProvider(ABC):
     OrderService/PaymentService only ever talk to this interface, never to
     a concrete provider — see workplan.md section 33. `capture()` is for
     providers with a synchronous, client-triggered confirmation (the fake
-    provider); a webhook-driven provider (BTCPayProvider) settles via
+    provider); a webhook-driven provider (BlockonomicsProvider) settles via
     app/services/orders.py::handle_payment_webhook_event instead and treats
-    `capture()` as unsupported — see btcpay.py.
+    `capture()` as unsupported — see blockonomics.py.
     """
 
     @abstractmethod

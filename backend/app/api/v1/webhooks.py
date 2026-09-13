@@ -1,63 +1,50 @@
-import json
-
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.integrations.payments.btcpay import BTCPayProvider
+from app.integrations.payments.blockonomics import BlockonomicsProvider
 from app.services import orders as order_service
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
-@router.post("/payments/btcpay", status_code=status.HTTP_200_OK)
-async def btcpay_webhook(
-    request: Request,
-    btcpay_sig: str | None = Header(default=None, alias="BTCPay-Sig"),
+@router.get("/payments/blockonomics", status_code=status.HTTP_200_OK)
+async def blockonomics_webhook(
+    secret: str = Query(...),
+    addr: str = Query(...),
+    txid: str = Query(...),
+    status_param: int = Query(..., alias="status"),
+    value: int = Query(...),
+    crypto: str = Query(default="BTC"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Real webhook endpoint for BTCPay Server invoice events.
+    """Real callback endpoint for Blockonomics payment notifications.
 
-    Signature verification happens on the *raw* request body — this is why
-    the payload isn't a Pydantic model parameter: FastAPI would parse (and
-    re-serialize on any access) JSON before we could verify the exact bytes
-    BTCPay signed. See app/integrations/payments/btcpay.py::verify_webhook.
+    Blockonomics delivers this as a plain GET request with no request body
+    and no HMAC-signed header (unlike BTCPay) — authenticity rests entirely
+    on the shared `secret` query param, configured once on the store's
+    callback URL in the Blockonomics dashboard and compared against
+    BLOCKONOMICS_CALLBACK_SECRET here. See
+    app/integrations/payments/blockonomics.py::verify_webhook.
 
-    Event -> outcome mapping and the idempotency guarantee both live in
-    app/services/orders.py::handle_payment_webhook_event — this endpoint
-    only authenticates the request and hands off the parsed event.
+    Fires once per unique (txid, status, addr) combination as a payment
+    progresses: status 0 (seen, unconfirmed) -> 1 -> 2+ (final) — see
+    https://developers.blockonomics.co/docs/guides/callbacks. Every
+    delivery is treated as "this order is paid" (see
+    handle_payment_webhook_event's `payment.received` branch), matching how
+    the previous BTCPay integration fulfilled on first sight of payment
+    rather than waiting for confirmations.
     """
-    raw_body = await request.body()
-
-    if not btcpay_sig:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing BTCPay-Sig header")
-
-    provider = BTCPayProvider()
-    if not provider.verify_webhook(raw_body, btcpay_sig):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid webhook signature")
-
-    try:
-        payload = json.loads(raw_body)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON body") from None
-
-    event_type = payload.get("type")
-    invoice_id = payload.get("invoiceId")
-    # BTCPay includes a per-delivery id header on retries of the *same*
-    # logical event; falling back to invoiceId+type only covers the (much
-    # more common) case of one delivery per event, not BTCPay's own retry
-    # semantics — deliveryId is the correct dedup key when present.
-    delivery_id = payload.get("deliveryId") or f"{invoice_id}:{event_type}:{payload.get('timestamp')}"
-
-    if not event_type or not delivery_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Malformed webhook payload")
+    provider = BlockonomicsProvider()
+    if not provider.verify_webhook(b"", secret):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid callback secret")
 
     await order_service.handle_payment_webhook_event(
         db,
-        provider_event_id=delivery_id,
-        provider_payment_id=invoice_id,
-        event_type=event_type,
-        payload=payload,
+        provider_event_id=f"{txid}:{status_param}:{addr}",
+        provider_payment_id=addr,
+        event_type="payment.received",
+        payload={"addr": addr, "txid": txid, "status": status_param, "value": value, "crypto": crypto},
     )
 
     return {"received": True}

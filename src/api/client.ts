@@ -140,7 +140,7 @@ export interface OrderResult {
   createdAt: string;
 }
 
-export type CheckoutMode = 'none' | 'btcpay' | 'ramp';
+export type CheckoutMode = 'none' | 'blockonomics' | 'ramp';
 
 export interface PaymentResult {
   id: string;
@@ -150,10 +150,11 @@ export interface PaymentResult {
   currency: string;
   // "none": no real provider configured — the existing auto-capture demo
   //   flow applies (see App.tsx handleOrderPlaced).
-  // "btcpay": redirect the browser to checkoutUrl — BTCPay's own hosted
-  //   checkout page (direct crypto payment, customer's own wallet).
+  // "blockonomics": show cryptoAddress directly — Blockonomics has no
+  //   hosted checkout page to redirect to (direct crypto payment, customer's
+  //   own wallet).
   // "ramp": open a Ramp Network widget targeting cryptoAddress (card
-  //   payment that settles as BTC into the same BTCPay-watched wallet).
+  //   payment that settles as BTC into the same Blockonomics-watched wallet).
   checkoutMode: CheckoutMode;
   checkoutUrl: string | null;
   cryptoAddress: string | null;
@@ -253,8 +254,8 @@ export function capturePayment(
 const RAMP_HOST_API_KEY = (import.meta.env.VITE_RAMP_HOST_API_KEY as string | undefined) || '';
 
 /** Card-to-Bitcoin on-ramp: Ramp buys BTC by card and sends it to
- * `cryptoAddress` — the same BTCPay-watched, self-custodied wallet address
- * a direct crypto payer's invoice would use. See backend/README.md's
+ * `cryptoAddress` — the same Blockonomics-watched, self-custodied wallet
+ * address a direct crypto payer would send to. See backend/README.md's
  * "Card-to-Bitcoin via Ramp Network" section for the full contract.
  * Returns null if VITE_RAMP_HOST_API_KEY isn't configured — the caller
  * should fall back to a manual-payment display in that case. */

@@ -20,13 +20,16 @@ class PaymentOut(BaseModel):
     amount: float
     currency: str
     # How the frontend should get the customer to actually pay:
-    #  "none"   — fake/manual provider, nothing to redirect to (card_link
-    #             with no BTCPay configured — an unconfigured dev/CI default)
-    #  "btcpay" — redirect to checkoutUrl, BTCPay's own hosted checkout page
-    #             (direct crypto payment, customer uses their own wallet)
-    #  "ramp"   — open a Ramp Network widget targeting cryptoAddress (card
-    #             payment that settles as BTC — see backend/README.md)
-    checkoutMode: Literal["none", "btcpay", "ramp"] = "none"
+    #  "none"          — fake/manual provider, nothing to redirect to
+    #                    (card_link with no Blockonomics configured — an
+    #                    unconfigured dev/CI default)
+    #  "blockonomics"  — show cryptoAddress directly, no checkout page to
+    #                    redirect to (direct crypto payment, customer uses
+    #                    their own wallet — see CheckoutPage.tsx)
+    #  "ramp"          — open a Ramp Network widget targeting cryptoAddress
+    #                    (card payment that settles as BTC — see
+    #                    backend/README.md)
+    checkoutMode: Literal["none", "blockonomics", "ramp"] = "none"
     checkoutUrl: str | None = None
     cryptoAddress: str | None = None
 

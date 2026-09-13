@@ -78,9 +78,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<OrderResult | null>(null);
-  // Set only when checkoutMode="ramp" but VITE_RAMP_HOST_API_KEY isn't
-  // configured — there's nowhere to redirect, so show the raw address
-  // instead of pretending the order is complete.
+  // Set for checkoutMode="blockonomics" (always — there's no hosted
+  // checkout page to redirect to), and also for checkoutMode="ramp" when
+  // VITE_RAMP_HOST_API_KEY isn't configured — there's nowhere to redirect,
+  // so show the raw address instead of pretending the order is complete.
   const [manualCryptoPayment, setManualCryptoPayment] = useState<{
     order: OrderResult;
     address: string;
@@ -169,12 +170,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
       // The order now exists (awaiting_payment) — how the customer actually
       // pays depends on what the backend configured (backend/README.md's
       // "Card-to-Bitcoin via Ramp Network" section):
-      if (payment.checkoutMode === 'btcpay' && payment.checkoutUrl) {
-        // Direct crypto payment: BTCPay's own hosted checkout page. The
-        // order stays "awaiting_payment" until BTCPay's webhook confirms
-        // it server-side — there's nothing more to do here but send the
-        // customer there.
-        window.location.href = payment.checkoutUrl;
+      if (payment.checkoutMode === 'blockonomics' && payment.cryptoAddress) {
+        // Direct crypto payment: Blockonomics has no hosted checkout page to
+        // redirect to, just a bare receive address — show it directly. The
+        // order stays "awaiting_payment" until Blockonomics' callback
+        // confirms it server-side.
+        setManualCryptoPayment({
+          order,
+          address: payment.cryptoAddress,
+          amount: order.totalAmount,
+          currency: order.currency,
+        });
         return;
       }
 
@@ -234,8 +240,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ items, onOrderPlaced
           </button>
         </div>
         <p className="text-xs text-gray-500 mb-6">
-          A card-payment widget isn&apos;t configured on this store yet — this address accepts a direct
-          wallet payment in the meantime.
+          Pay directly from your own Bitcoin wallet — no card or account needed.
         </p>
         <button
           type="button"
