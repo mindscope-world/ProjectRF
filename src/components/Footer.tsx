@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSiteContent } from '../SiteContentContext';
+import footerPaymentIcons from '../assets/images/banners/footer-payment-icons.png';
 
 interface FooterProps {
   onCategoryClick?: (cat: string) => void;
@@ -220,58 +221,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavSelect }) => {
 
           {/* Right: Payment Icons + Scroll to Top Button */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap justify-center">
-            {/* Cash App Badge */}
-            <div
-              className="flex flex-col items-center justify-center bg-[#00D632] text-white rounded-[5px] px-2 py-0.5 h-[34px] min-w-[54px] shadow-sm select-none"
-              title="Cash App"
-            >
-              <span className="text-[15px] font-black leading-none">$</span>
-              <span className="text-[7.5px] font-bold tracking-tighter leading-none mt-0.5">
-                Cash App
-              </span>
-            </div>
-
-            {/* Zelle Badge */}
-            <div
-              className="flex items-center justify-center bg-[#7414CA] text-white font-bold text-[12px] rounded-[5px] px-2.5 h-[34px] shadow-sm tracking-tight select-none"
-              title="Zelle"
-            >
-              zelle
-            </div>
-
-            {/* Venmo Badge */}
-            <div
-              className="flex items-center justify-center bg-[#008CFF] text-white font-black italic text-[13px] rounded-[5px] px-2.5 h-[34px] shadow-sm tracking-tight select-none"
-              title="Venmo"
-            >
-              venmo
-            </div>
-
-            {/* PayPal Badge */}
-            <div
-              className="flex items-center justify-center bg-white rounded-[5px] px-2.5 h-[34px] border border-gray-200 shadow-sm select-none"
-              title="PayPal"
-            >
-              <span className="text-[#003087] font-black italic text-[12px]">Pay</span>
-              <span className="text-[#0079C1] font-black italic text-[12px]">Pal</span>
-            </div>
-
-            {/* Bitcoin Badge */}
-            <div
-              className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-gradient-to-b from-[#f7931a] to-[#d3770e] text-white font-black text-[15px] shadow-sm border border-amber-300/40 select-none"
-              title="Bitcoin"
-            >
-              ₿
-            </div>
-
-            {/* Cards Stack Badge */}
-            <div
-              className="flex items-center justify-center bg-[#1f2327] rounded-[5px] px-2 h-[34px] border border-gray-700 shadow-sm select-none gap-0.5"
-              title="Credit & Debit Cards"
-            >
-              <div className="w-4 h-2.5 bg-amber-400 rounded-xs shadow-2xs"></div>
-              <div className="w-4 h-2.5 bg-red-500 rounded-xs -ml-1.5 opacity-90 shadow-2xs"></div>
-            </div>
+            <img
+              src={footerPaymentIcons}
+              alt="Accepted payment methods: Cash App, Zelle, Venmo, PayPal, Bitcoin, Credit Card"
+              className="h-[34px] w-auto object-contain"
+            />
 
             {/* Scroll To Top Button: White circle with green arrow */}
             <button

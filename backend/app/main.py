@@ -13,7 +13,7 @@ from app.integrations.payments.blockonomics import BlockonomicsConfigurationErro
 settings = get_settings()
 
 app = FastAPI(
-    title="Brimline Headwear Commerce API",
+    title="Rapidfinil Commerce API",
     version="0.1.0",
 )
 

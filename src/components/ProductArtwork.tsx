@@ -1,38 +1,75 @@
 import React from 'react';
 
 import { API_ORIGIN } from '../api/client';
-import tieDyeBucketHat from '../assets/images/tie-dye-bucket-hat.jpeg';
-import woolBeret from '../assets/images/wool-beret.jpeg';
-import youthDadCap from '../assets/images/youth-dad-cap.jpeg';
-import ruggedTrailCap from '../assets/images/rugged-trail-cap.jpeg';
-import faithwalkCap from '../assets/images/faithwalk-cap.jpeg';
-import bearPomBeanie from '../assets/images/bear-pom-beanie.jpeg';
-import cowPrintBucketHat from '../assets/images/cow-print-bucket-hat.jpeg';
-import parisNightsBucketHat from '../assets/images/paris-nights-bucket-hat.jpeg';
-import espressoMonogramCap from '../assets/images/espresso-monogram-cap.jpeg';
-import ribbonBowBeanie from '../assets/images/ribbon-bow-beanie.jpeg';
-import corduroyDockerCap from '../assets/images/corduroy-docker-cap.jpeg';
-import statementBucketHat from '../assets/images/statement-bucket-hat.jpeg';
-import classicBearBucketHat from '../assets/images/classic-bear-bucket-hat.jpeg';
-import camoFaithCap from '../assets/images/camo-faith-cap.jpeg';
-import wideBrimExpeditionHat from '../assets/images/wide-brim-expedition-hat.jpeg';
+import phentermine from '../assets/images/products/phentermine.jpg';
+import strattera from '../assets/images/products/strattera.jpg';
+import modalert from '../assets/images/products/modalert.webp';
+import modalertEu from '../assets/images/products/modalert-eu.jpg';
+import modvigil from '../assets/images/products/modvigil.jpg';
+import modvigilEu from '../assets/images/products/modvigil-eu.jpeg';
+import modasafe from '../assets/images/products/modasafe.jpg';
+import modasmart from '../assets/images/products/modasmart.jpg';
+import waklert from '../assets/images/products/waklert.jpeg';
+import waklertEu from '../assets/images/products/waklert-eu.jpeg';
+import artvigil150 from '../assets/images/products/artvigil-150.jpg';
+import artvigil150Eu from '../assets/images/products/artvigil-150-eu.jpg';
+import artvigil250 from '../assets/images/products/artvigil-250.jpeg';
+import nitrazepam from '../assets/images/products/nitrazepam.jpeg';
+import xanax1mg from '../assets/images/products/xanax-1mg.jpeg';
+import xanaxBars from '../assets/images/products/xanax-bars.jpeg';
+import farmapram from '../assets/images/products/farmapram.jpg';
+import clonazepam from '../assets/images/products/clonazepam.jpeg';
+import bensedin from '../assets/images/products/bensedin.jpg';
+import ativan from '../assets/images/products/ativan.jpg';
+import zolpidem from '../assets/images/products/zolpidem.jpeg';
+import zopiclone from '../assets/images/products/zopiclone.jpg';
+import tramadol from '../assets/images/products/tramadol.jpg';
+import tapentadol from '../assets/images/products/tapentadol.jpg';
+import soma from '../assets/images/products/soma.jpg';
+import viagra from '../assets/images/products/viagra.jpg';
+import cialis from '../assets/images/products/cialis.jpg';
+import gabapentin from '../assets/images/products/gabapentin.jpeg';
+import lyrica from '../assets/images/products/lyrica.jpeg';
+import brandLogo from '../assets/images/brand-logo.png';
 
+// Real product photography pulled from the old WordPress/WooCommerce store
+// (rapidfinil.st) so the new storefront matches it exactly. Where the old
+// site used a different photo per region (its "EU to EU" vs. general/
+// "USA domestic" product listings), both are kept under distinct keys —
+// see the "-eu" suffixed entries below and their corresponding EU catalog
+// rows' imageKey in the database. Products with only one photo on the old
+// site (e.g. Artvigil 250mg) share the same key across both regions.
 const IMAGES_BY_KEY: Record<string, string> = {
-  'tie-dye-bucket-hat': tieDyeBucketHat,
-  'wool-beret': woolBeret,
-  'youth-dad-cap': youthDadCap,
-  'rugged-trail-cap': ruggedTrailCap,
-  'faithwalk-cap': faithwalkCap,
-  'bear-pom-beanie': bearPomBeanie,
-  'cow-print-bucket-hat': cowPrintBucketHat,
-  'paris-nights-bucket-hat': parisNightsBucketHat,
-  'espresso-monogram-cap': espressoMonogramCap,
-  'ribbon-bow-beanie': ribbonBowBeanie,
-  'corduroy-docker-cap': corduroyDockerCap,
-  'classic-bear-bucket-hat': classicBearBucketHat,
-  'camo-faith-cap': camoFaithCap,
-  'wide-brim-expedition-hat': wideBrimExpeditionHat,
-  'statement-bucket-hat': statementBucketHat,
+  phentermine,
+  strattera,
+  modalert,
+  'modalert-eu': modalertEu,
+  modvigil,
+  'modvigil-eu': modvigilEu,
+  modasafe,
+  modasmart,
+  waklert,
+  'waklert-eu': waklertEu,
+  'artvigil-150': artvigil150,
+  'artvigil-150-eu': artvigil150Eu,
+  'artvigil-250': artvigil250,
+  nitrazepam,
+  'xanax-1mg': xanax1mg,
+  'xanax-bars': xanaxBars,
+  farmapram,
+  clonazepam,
+  bensedin,
+  ativan,
+  zolpidem,
+  zopiclone,
+  tramadol,
+  tapentadol,
+  soma,
+  viagra,
+  cialis,
+  gabapentin,
+  lyrica,
+  'brand-logo': brandLogo,
 };
 
 export const UsaDomesticSeal: React.FC<{ className?: string }> = ({ className = 'w-16 h-16' }) => {

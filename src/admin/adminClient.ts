@@ -1,7 +1,7 @@
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
 
-const TOKEN_STORAGE_KEY = 'brimline_admin_token';
+const TOKEN_STORAGE_KEY = 'rapidfinil_admin_token';
 
 export function getAdminToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);

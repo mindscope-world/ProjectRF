@@ -9,7 +9,7 @@ export const API_BASE_URL =
 // relative "/uploads/products/xyz.jpg" imageKey into a full URL.
 export const API_ORIGIN = new URL(API_BASE_URL).origin;
 
-const SESSION_STORAGE_KEY = 'brimline_session_id';
+const SESSION_STORAGE_KEY = 'rapidfinil_session_id';
 
 /**
  * Guest-cart identity until the backend's Phase 2 (Auth) lands. Generated
@@ -222,7 +222,7 @@ export function createOrder(
   });
 }
 
-const ADDRESS_STORAGE_KEY = 'brimline_shipping_address';
+const ADDRESS_STORAGE_KEY = 'rapidfinil_shipping_address';
 
 /** Last address the guest entered at checkout — there's no account to save it
  * to (Phase 2), so CartPage's "Shipping to ..." summary and CheckoutPage's
